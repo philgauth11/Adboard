@@ -78,3 +78,4 @@ def init_scheduler(app):
     scheduler = BackgroundScheduler(daemon=True)
     scheduler.add_job(sync_all_clients, "interval", hours=1, args=[app], id="hourly_sync")
     scheduler.start()
+    return scheduler

@@ -12,6 +12,8 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     migrate.init_app(app, db)
 
+    import models  # noqa: F401 — ensure models are registered with SQLAlchemy metadata
+
     from routes.auth import auth_bp
     from routes.admin import admin_bp
     from routes.access import access_bp

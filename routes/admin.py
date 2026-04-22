@@ -1,9 +1,9 @@
 from flask import Blueprint
-from flask_login import login_required
+from decorators import require_role
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 @admin_bp.route("/")
-@login_required
+@require_role("superadmin", "admin", "user")
 def dashboard():
-    return "Dashboard coming soon", 200
+    return "admin dashboard stub", 200

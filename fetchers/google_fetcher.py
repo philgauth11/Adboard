@@ -3,6 +3,15 @@ from datetime import date, timedelta
 from google.ads.googleads.client import GoogleAdsClient
 
 def _build_client():
+    required = [
+        "GOOGLE_ADS_DEVELOPER_TOKEN",
+        "GOOGLE_ADS_CLIENT_ID",
+        "GOOGLE_ADS_CLIENT_SECRET",
+        "GOOGLE_ADS_REFRESH_TOKEN",
+    ]
+    missing = [k for k in required if k not in os.environ]
+    if missing:
+        raise EnvironmentError(f"Missing required env vars: {', '.join(missing)}")
     return GoogleAdsClient.load_from_dict({
         "developer_token": os.environ["GOOGLE_ADS_DEVELOPER_TOKEN"],
         "client_id": os.environ["GOOGLE_ADS_CLIENT_ID"],
@@ -68,5 +77,5 @@ def fetch_adsets(customer_id, days=30):
         WHERE segments.date BETWEEN '{start}' AND '{end}'
           AND ad_group.status != 'REMOVED'
     """
-    return [_parse_row(r, lambda r: {"adset_id": str(r.ad_group.id), "adset_name": r.ad_group.name})
+    return [_parse_row(r, lambda row: {"adset_id": str(row.ad_group.id), "adset_name": row.ad_group.name})
             for r in service.search(customer_id=customer_id, query=query)]

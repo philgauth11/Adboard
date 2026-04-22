@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ c.name }}{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+  <a href="{{ url_for('admin.dashboard') }}" style="color:var(--gris);font-size:12px">← Retour</a>
+  <h1 style="font-size:18px;font-weight:700">{{ c.name }}</h1>
+  {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
+  {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+</div>
+
+<!-- Period filter -->
+<div style="display:flex;gap:8px;margin-bottom:20px">
+  {% for d,l in [(7,"7 jours"),(30,"30 jours"),(90,"90 jours")] %}
+    <a href="?days={{ d }}" class="pill {% if days==d %}active{% endif %}">{{ l }}</a>
+  {% endfor %}
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+  <div class="kpi"><div class="kpi-label">Budget dépensé</div><div class="kpi-value">${{ "%.2f"|format(spend) }}</div></div>
+  <div class="kpi"><div class="kpi-label">Revenus</div><div class="kpi-value" style="color:#2d9e6b">${{ "%.2f"|format(revenue) }}</div></div>
+  <div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value accent">{{ roas }}x</div></div>
+  <div class="kpi"><div class="kpi-label">Clics</div><div class="kpi-value">{{ "{:,}".format(clicks) }}</div></div>
+</div>
+
+<!-- Chart -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-header"><span class="card-title">Dépenses par jour</span></div>
+  <div style="padding:16px;height:200px">
+    <canvas id="spendChart"></canvas>
+  </div>
+</div>
+
+<!-- Campaigns -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Campagnes</span></div>
+  <table>
+    <thead><tr>
+      <th>Campagne</th><th></th>
+      <th class="right">Dépenses</th><th class="right">Revenus</th>
+      <th class="right">ROAS</th><th class="right">CTR</th><th class="right">CPC</th>
+    </tr></thead>
+    <tbody>
+    {% for m in campaigns %}
+      <tr>
+        <td style="font-weight:600">{{ m.campaign_name }}</td>
+        <td><span class="tag-{{ m.platform }}">{{ m.platform|capitalize }}</span></td>
+        <td class="right">${{ "%.2f"|format(m.spend) }}</td>
+        <td class="right">${{ "%.2f"|format(m.revenue) }}</td>
+        <td class="right"><span class="roas-good">{{ m.roas }}x</span></td>
+        <td class="right">{{ m.ctr }}%</td>
+        <td class="right">${{ m.cpc }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script>
+  fetch("/api/client/{{ c.id }}/chart?days={{ days }}")
+    .then(r => r.json())
+    .then(data => {
+      new Chart(document.getElementById("spendChart"), {
+        type: "bar",
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: "Meta", data: data.meta, backgroundColor: "#E95526" },
+            { label: "Google", data: data.google, backgroundColor: "#4285F4" },
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
+      });
+    });
+</script>
+{% endblock %}

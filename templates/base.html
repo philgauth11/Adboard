@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AdBoard{% endblock %} — Tête à Papineau</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tap.css') }}">
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="nav">
+    <div>
+      <div class="nav-brand-name">Tête à Papineau</div>
+      <div class="nav-brand-sub">AdBoard</div>
+    </div>
+    {% if current_user.is_authenticated %}
+      <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Vue globale</a>
+      <a class="nav-link {% if request.blueprint == 'access' %}active{% endif %}" href="{{ url_for('access.index') }}">Accès</a>
+    {% endif %}
+    <div class="nav-right">
+      {% block nav_right %}
+        {% if current_user.is_authenticated %}
+          <span style="font-size:11px;color:var(--beige);opacity:.7">{{ current_user.name }}</span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">Déconnexion</a>
+        {% endif %}
+      {% endblock %}
+    </div>
+  </nav>
+  <div class="main">
+    {% for msg in get_flashed_messages() %}
+      <div class="flash-error">{{ msg }}</div>
+    {% endfor %}
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>

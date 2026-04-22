@@ -1,0 +1,55 @@
+:root {
+  --orange:  #E95526;
+  --bordeaux: #451519;
+  --beige:   #E4D4BA;
+  --fond:    #FAF7F2;
+  --texte:   #2D1A1A;
+  --gris:    #9C7A6A;
+  --bordure: #EDE5D8;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--fond); color: var(--texte); }
+a { color: var(--orange); text-decoration: none; }
+.nav { background: var(--bordeaux); padding: 12px 24px; display: flex; align-items: center; gap: 20px; }
+.nav-brand-name { color: var(--orange); font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+.nav-brand-sub  { color: var(--beige); font-size: 10px; letter-spacing: 2px; text-transform: uppercase; }
+.nav-link { color: var(--beige); font-size: 12px; opacity: 0.65; cursor: pointer; }
+.nav-link:hover, .nav-link.active { opacity: 1; }
+.nav-link.active { border-bottom: 2px solid var(--orange); padding-bottom: 2px; }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.main { padding: 24px; }
+.btn { padding: 7px 16px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-primary { background: var(--orange); color: white; }
+.btn-outline { background: white; border: 1px solid var(--bordure); color: var(--gris); }
+.btn-danger  { background: white; border: 1px solid #f5c6c6; color: #c0392b; }
+.pill { font-size: 11px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--beige); color: #6B3A30; background: white; cursor: pointer; }
+.pill.active { background: var(--orange); color: white; border-color: var(--orange); }
+.card { background: white; border-radius: 10px; border: 1px solid var(--bordure); overflow: hidden; margin-bottom: 16px; }
+.card-header { padding: 14px 20px; border-bottom: 1px solid var(--bordure); display: flex; align-items: center; justify-content: space-between; }
+.card-title { font-size: 13px; font-weight: 700; }
+.card-meta  { font-size: 11px; color: var(--gris); }
+.kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+.kpi { background: white; border-radius: 10px; padding: 16px; border: 1px solid var(--bordure); }
+.kpi-label { font-size: 10px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.kpi-value { font-size: 22px; font-weight: 700; color: var(--texte); margin-bottom: 4px; }
+.kpi-value.accent { color: var(--orange); }
+.trend-up   { font-size: 10px; color: #2d9e6b; }
+.trend-down { font-size: 10px; color: #c0392b; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr { background: var(--fond); }
+th { padding: 10px 14px; text-align: left; font-size: 10px; color: var(--gris); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+th.right, td.right { text-align: right; }
+td { padding: 12px 14px; border-top: 1px solid #F0E8DC; }
+tbody tr:hover { background: #FDF9F5; cursor: pointer; }
+.badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600; display: inline-block; }
+.badge-superadmin { background: #fdf0ea; color: var(--orange); border: 1px solid var(--orange); }
+.badge-admin { background: #f0eafa; color: #6B3A8A; border: 1px solid #C4A8E0; }
+.badge-user  { background: #eaf0fa; color: #2d6ba4; border: 1px solid #A8C8E0; }
+.tag-meta   { font-size: 10px; background: #1877F2; color: white; padding: 2px 6px; border-radius: 3px; margin-right: 2px; }
+.tag-google { font-size: 10px; background: #4285F4; color: white; padding: 2px 6px; border-radius: 3px; }
+.sync-ok  { font-size: 10px; color: #2d9e6b; background: rgba(45,158,107,0.1); padding: 2px 8px; border-radius: 10px; }
+.sync-err { font-size: 10px; color: #c0392b; background: rgba(192,57,43,0.1); padding: 2px 8px; border-radius: 10px; }
+.roas-good { color: var(--orange); font-weight: 700; }
+.roas-ok   { color: var(--gris);   font-weight: 700; }
+.roas-bad  { color: #c0392b;        font-weight: 700; }
+.flash-error { background: #fdf0ea; color: var(--orange); border: 1px solid var(--orange); border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }

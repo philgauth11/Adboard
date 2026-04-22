@@ -15,10 +15,13 @@ def _extract_action(actions, action_type):
             return float(a.get("value", 0))
     return 0.0
 
+def _extract_action_primary(actions):
+    """Fallback to 'purchase' if 'offsite_conversion.fb_pixel_purchase' is not available."""
+    val = _extract_action(actions, "offsite_conversion.fb_pixel_purchase")
+    return val if val else _extract_action(actions, "purchase")
+
 def _compute_roas(action_values, spend):
-    revenue = _extract_action(action_values, "offsite_conversion.fb_pixel_purchase")
-    if revenue == 0:
-        revenue = _extract_action(action_values, "purchase")
+    revenue = _extract_action_primary(action_values)
     spend_val = float(spend) if spend else 0
     return round(revenue / spend_val, 2) if spend_val else 0.0
 
@@ -39,8 +42,8 @@ def _parse_row(row, extra_fields=None):
         "cpc": round(float(row.get("cpc", 0)), 2),
         "cpm": round(float(row.get("cpm", 0)), 2),
         "spend": round(float(spend), 2),
-        "purchases": int(_extract_action(actions, "offsite_conversion.fb_pixel_purchase") or _extract_action(actions, "purchase")),
-        "revenue": round(_extract_action(action_values, "offsite_conversion.fb_pixel_purchase") or _extract_action(action_values, "purchase"), 2),
+        "purchases": int(_extract_action_primary(actions)),
+        "revenue": round(_extract_action_primary(action_values), 2),
         "roas": _compute_roas(action_values, spend),
     }
     if extra_fields:
@@ -48,7 +51,10 @@ def _parse_row(row, extra_fields=None):
     return result
 
 def fetch_campaigns(account_id, date_preset="last_30d", access_token=None):
-    FacebookAdsApi.init(access_token=access_token or os.environ["META_ACCESS_TOKEN"])
+    token = access_token or os.environ.get("META_ACCESS_TOKEN")
+    if not token:
+        raise ValueError("META_ACCESS_TOKEN environment variable is not set")
+    FacebookAdsApi.init(access_token=token)
     account = AdAccount(account_id)
     insights = account.get_insights(
         fields=["campaign_id", "campaign_name"] + INSIGHT_FIELDS,
@@ -57,7 +63,10 @@ def fetch_campaigns(account_id, date_preset="last_30d", access_token=None):
     return [_parse_row(r) for r in insights]
 
 def fetch_adsets(account_id, date_preset="last_30d", access_token=None):
-    FacebookAdsApi.init(access_token=access_token or os.environ["META_ACCESS_TOKEN"])
+    token = access_token or os.environ.get("META_ACCESS_TOKEN")
+    if not token:
+        raise ValueError("META_ACCESS_TOKEN environment variable is not set")
+    FacebookAdsApi.init(access_token=token)
     account = AdAccount(account_id)
     insights = account.get_insights(
         fields=["campaign_id", "campaign_name", "adset_id", "adset_name"] + INSIGHT_FIELDS,

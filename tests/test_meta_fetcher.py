@@ -16,6 +16,10 @@ def test_compute_roas():
 def test_compute_roas_zero_spend():
     assert _compute_roas([], "0") == 0.0
 
+def test_compute_roas_purchase_fallback():
+    action_values = [{"action_type": "purchase", "value": "300"}]
+    assert _compute_roas(action_values, "100") == 3.0
+
 def _mock_insight_row(campaign_id="111", campaign_name="Spring", adset_id=None, adset_name=None):
     row = {
         "date_start": "2026-04-01",
@@ -32,7 +36,7 @@ def _mock_insight_row(campaign_id="111", campaign_name="Spring", adset_id=None, 
         "actions": [{"action_type": "purchase", "value": "5"}],
         "action_values": [{"action_type": "offsite_conversion.fb_pixel_purchase", "value": "500"}],
     }
-    if adset_id:
+    if adset_id is not None:
         row["adset_id"] = adset_id
         row["adset_name"] = adset_name
     return row

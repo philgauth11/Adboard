@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion — AdBoard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #FAF7F2; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    .card { background: white; border-radius: 12px; border: 1px solid #EDE5D8; padding: 40px; width: 360px; }
+    .brand { text-align: center; margin-bottom: 32px; }
+    .brand-name { color: #E95526; font-weight: 800; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+    .brand-sub { color: #9C7A6A; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; }
+    label { display: block; font-size: 11px; color: #9C7A6A; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    input { width: 100%; padding: 10px 12px; border: 1px solid #EDE5D8; border-radius: 8px; font-size: 14px; margin-bottom: 16px; background: #FAF7F2; color: #2D1A1A; }
+    input:focus { outline: none; border-color: #E95526; }
+    button { width: 100%; padding: 12px; background: #E95526; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .error { background: #fdf0ea; color: #E95526; border: 1px solid #E95526; border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand">
+      <div class="brand-name">Tête à Papineau</div>
+      <div class="brand-sub">AdBoard — Connexion équipe</div>
+    </div>
+    {% for msg in get_flashed_messages() %}
+      <div class="error">{{ msg }}</div>
+    {% endfor %}
+    <form method="POST">
+      <label>Email</label>
+      <input type="email" name="email" required autofocus>
+      <label>Mot de passe</label>
+      <input type="password" name="password" required>
+      <button type="submit">Se connecter</button>
+    </form>
+  </div>
+</body>
+</html>

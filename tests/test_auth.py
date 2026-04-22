@@ -11,8 +11,9 @@ def _create_member(db, role="admin"):
 
 def test_login_redirects_to_dashboard_on_success(client, db):
     _create_member(db)
-    r = client.post("/auth/login", data={"email": "philippe@tap.com", "password": "secret123"}, follow_redirects=True)
-    assert r.status_code == 200
+    r = client.post("/auth/login", data={"email": "philippe@tap.com", "password": "secret123"}, follow_redirects=False)
+    assert r.status_code == 302
+    assert "admin" in r.headers["Location"]
 
 def test_login_rejects_wrong_password(client, db):
     _create_member(db)
@@ -23,8 +24,9 @@ def test_login_rejects_wrong_password(client, db):
 def test_logout_redirects_to_login(client, db):
     _create_member(db)
     client.post("/auth/login", data={"email": "philippe@tap.com", "password": "secret123"})
-    r = client.get("/auth/logout", follow_redirects=True)
-    assert r.status_code == 200
+    r = client.get("/auth/logout", follow_redirects=False)
+    assert r.status_code == 302
+    assert "login" in r.headers["Location"]
 
 def test_admin_dashboard_requires_login(client):
     r = client.get("/admin/", follow_redirects=False)

@@ -2,6 +2,7 @@ import bcrypt
 from datetime import datetime, UTC
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required
+from extensions import db
 from models import TeamMember
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -14,7 +15,6 @@ def login():
         member = TeamMember.query.filter_by(email=email).first()
         if member and member.password_hash and bcrypt.checkpw(password, member.password_hash.encode()):
             login_user(member)
-            from extensions import db
             member.last_login_at = datetime.now(UTC)
             db.session.commit()
             return redirect(url_for("admin.dashboard"))

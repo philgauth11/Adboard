@@ -1,18 +1,13 @@
 import bcrypt
 from models import TeamMember
 from extensions import db
-from flask_login import login_user
 
 
-def _login(client_fixture, db, role="user", assigned_client_ids=None):
+def _login(client_fixture, db, role="user"):
     pw = bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode()
     m = TeamMember(email=f"{role}@tap.com", name="Test", role=role, password_hash=pw)
     db.session.add(m)
     db.session.commit()
-    if assigned_client_ids:
-        for cid in assigned_client_ids:
-            db.session.add(TeamMemberClient(team_member_id=m.id, client_id=cid))
-        db.session.commit()
     client_fixture.post("/auth/login", data={"email": f"{role}@tap.com", "password": "pw"})
     return m
 

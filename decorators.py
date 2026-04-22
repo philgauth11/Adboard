@@ -8,7 +8,7 @@ def require_role(*roles):
     def decorator(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if current_user.role not in roles:
+            if not current_user.is_authenticated or current_user.role not in roles:
                 abort(403)
             return f(*args, **kwargs)
         return login_required(wrapped)

@@ -1,5 +1,5 @@
 import bcrypt
-from models import TeamMember, Client, TeamMemberClient
+from models import TeamMember
 from extensions import db
 from flask_login import login_user
 
@@ -26,3 +26,9 @@ def test_superadmin_can_access_admin_dashboard(client, db):
 def test_unauthenticated_redirected_to_login(client):
     r = client.get("/admin/", follow_redirects=False)
     assert r.status_code == 302
+
+
+def test_wrong_role_gets_403(client, db):
+    _login(client, db, role="client")
+    r = client.get("/admin/")
+    assert r.status_code == 403

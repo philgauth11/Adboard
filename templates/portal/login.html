@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — AdBoard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tap.css') }}">
+</head>
+<body>
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--fond)">
+  <div style="width:360px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:20px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:1px">Tête à Papineau</div>
+      <div style="font-size:11px;color:var(--gris);letter-spacing:3px;text-transform:uppercase;margin-top:4px">Rapport publicitaire</div>
+    </div>
+    <div class="card" style="padding:28px">
+      {% for msg in get_flashed_messages() %}
+        <div class="flash-error">{{ msg }}</div>
+      {% endfor %}
+      <form method="post">
+        <div style="margin-bottom:16px">
+          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Courriel</label>
+          <input name="email" type="email" required autocomplete="email"
+            style="width:100%;padding:10px 12px;border:1px solid var(--bordure);border-radius:8px;font-size:13px;background:white;color:var(--texte);outline:none">
+        </div>
+        <div style="margin-bottom:20px">
+          <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Mot de passe</label>
+          <input name="password" type="password" required autocomplete="current-password"
+            style="width:100%;padding:10px 12px;border:1px solid var(--bordure);border-radius:8px;font-size:13px;background:white;color:var(--texte);outline:none">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%;padding:11px">Se connecter</button>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, UTC
 import uuid
 from flask_login import UserMixin
 from extensions import db
@@ -13,7 +13,7 @@ class Client(db.Model):
     google_customer_id = db.Column(db.String(50))
     secret_token = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     metrics = db.relationship("AdMetric", backref="client", lazy="dynamic", cascade="all, delete-orphan")
     sync_logs = db.relationship("SyncLog", backref="client", lazy="dynamic", cascade="all, delete-orphan")
@@ -28,7 +28,7 @@ class TeamMember(db.Model, UserMixin):
     role = db.Column(db.String(20), nullable=False)  # superadmin | admin | user
     invite_token = db.Column(db.String(36))
     invite_expires_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     last_login_at = db.Column(db.DateTime)
 
     assigned_clients = db.relationship("TeamMemberClient", backref="member", lazy="dynamic", cascade="all, delete-orphan")
@@ -44,6 +44,9 @@ class TeamMemberClient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     team_member_id = db.Column(db.Integer, db.ForeignKey("team_members.id", ondelete="CASCADE"), nullable=False)
     client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
+    __table_args__ = (
+        db.UniqueConstraint("team_member_id", "client_id", name="uq_tmc_member_client"),
+    )
 
 
 class ClientUser(db.Model):
@@ -52,7 +55,7 @@ class ClientUser(db.Model):
     client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     last_login_at = db.Column(db.DateTime)
 
 
@@ -78,7 +81,7 @@ class AdMetric(db.Model):
     purchases = db.Column(db.Integer, default=0)
     revenue = db.Column(db.Float, default=0.0)
     roas = db.Column(db.Float, default=0.0)
-    synced_at = db.Column(db.DateTime, default=datetime.utcnow)
+    synced_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
 
 class SyncLog(db.Model):
@@ -89,4 +92,4 @@ class SyncLog(db.Model):
     status = db.Column(db.String(10), nullable=False)  # success | error
     rows_fetched = db.Column(db.Integer, default=0)
     error_message = db.Column(db.Text)
-    ran_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ran_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))

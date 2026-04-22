@@ -13,4 +13,8 @@ login_manager.login_message_category = "warning"
 @login_manager.user_loader
 def load_user(user_id):
     from models import TeamMember
-    return TeamMember.query.get(int(user_id))
+    try:
+        uid = int(user_id)
+    except (TypeError, ValueError):
+        return None
+    return db.session.get(TeamMember, uid)

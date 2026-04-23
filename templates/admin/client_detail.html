@@ -6,7 +6,29 @@
   <h1 style="font-size:18px;font-weight:700">{{ c.name }}</h1>
   {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
   {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+  <div style="margin-left:auto">
+    <button id="sync-btn" onclick="syncNow()" class="btn btn-outline">↻ Sync maintenant</button>
+  </div>
 </div>
+
+<script>
+function syncNow() {
+  const btn = document.getElementById("sync-btn");
+  btn.textContent = "Sync en cours...";
+  btn.disabled = true;
+  fetch("/api/sync/{{ c.id }}", { method: "POST" })
+    .then(r => r.json())
+    .then(() => {
+      btn.textContent = "✓ Sync terminée — recharge la page";
+      btn.style.color = "#2d9e6b";
+      btn.style.borderColor = "#2d9e6b";
+    })
+    .catch(() => {
+      btn.textContent = "Erreur — réessaie";
+      btn.disabled = false;
+    });
+}
+</script>
 
 <!-- Period filter -->
 <div style="display:flex;gap:8px;margin-bottom:20px">

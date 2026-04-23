@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Créer mon compte{% endblock %}
+{% block content %}
+<div style="max-width:400px;margin:40px auto">
+  <h1 style="font-size:18px;font-weight:700;margin-bottom:8px">Bienvenue, {{ member.name }} !</h1>
+  <p style="color:var(--gris);font-size:13px;margin-bottom:24px">Choisis ton mot de passe pour activer ton compte.</p>
+  <form method="POST" class="card" style="padding:24px">
+    <label style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Mot de passe</label>
+    <input type="password" name="password" required minlength="8" style="width:100%;padding:10px;border:1px solid var(--bordure);border-radius:8px;margin-bottom:16px;background:var(--fond)">
+    <button type="submit" class="btn btn-primary" style="width:100%">Activer mon compte</button>
+  </form>
+</div>
+{% endblock %}

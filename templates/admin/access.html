@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Accès{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+  <h1 style="font-size:18px;font-weight:700">Gestion des accès</h1>
+</div>
+
+<!-- Team Members -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Équipe ({{ members|length }})</span>
+    <button onclick="document.getElementById('invite-form').style.display='block'" class="btn btn-primary">+ Inviter</button>
+  </div>
+
+  <div id="invite-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
+    <form method="POST" action="{{ url_for('access.invite') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
+        <input name="name" required placeholder="Marie Leblanc" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
+        <input name="email" type="email" required placeholder="marie@tap.com" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Rôle</label>
+        <select name="role" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+          <option value="user">Utilisateur</option>
+          <option value="admin">Admin</option>
+          {% if current_member.role == 'superadmin' %}<option value="superadmin">Super Admin</option>{% endif %}
+        </select></div>
+      <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
+    </form>
+  </div>
+
+  <table>
+    <thead><tr><th>Membre</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      <tr>
+        <td>
+          <div style="font-weight:600">{{ m.name }}</div>
+          <div style="font-size:10px;color:var(--gris)">{{ m.email }}</div>
+        </td>
+        <td><span class="badge badge-{{ m.role }}">{{ m.role|capitalize }}</span></td>
+        <td>
+          {% if m.password_hash %}<span class="sync-ok">● Actif</span>
+          {% elif m.invite_token %}<span style="font-size:10px;color:#f39c12">◐ Invitation envoyée</span>
+          {% else %}<span class="sync-err">Accès révoqué</span>{% endif %}
+        </td>
+        <td style="font-size:11px;color:var(--gris)">
+          {{ m.last_login_at.strftime('%d %b à %H:%M') if m.last_login_at else '—' }}
+        </td>
+        <td>
+          {% if m.id != current_member.id %}
+          <form method="POST" action="{{ url_for('access.revoke', member_id=m.id) }}" style="display:inline" onsubmit="return confirm('Révoquer l\'accès de {{ m.name }} ?')">
+            <button class="btn btn-danger">Révoquer</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Clients -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Clients ({{ clients|length }})</span>
+    <button onclick="document.getElementById('client-form').style.display='block'" class="btn btn-primary">+ Ajouter un client</button>
+  </div>
+
+  <div id="client-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
+    <form method="POST" action="{{ url_for('access.new_client') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
+        <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Meta Account ID</label>
+        <input name="meta_account_id" placeholder="act_123456" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Google Customer ID</label>
+        <input name="google_customer_id" placeholder="1234567890" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <button type="submit" class="btn btn-primary">Ajouter</button>
+    </form>
+  </div>
+
+  <table>
+    <thead><tr><th>Client</th><th>Plateformes</th><th>Lien portail</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for c in clients %}
+      <tr>
+        <td style="font-weight:600">{{ c.name }}</td>
+        <td>
+          {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
+          {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+        </td>
+        <td>
+          <code style="font-size:10px;background:var(--fond);border:1px solid var(--bordure);padding:3px 8px;border-radius:4px">
+            /client/{{ c.secret_token[:12] }}...
+          </code>
+        </td>
+        <td>
+          <form method="POST" action="{{ url_for('access.rotate_client_token', client_id=c.id) }}" style="display:inline" onsubmit="return confirm('Générer un nouveau lien ? L\'ancien ne fonctionnera plus.')">
+            <button class="btn btn-outline">↻ Nouveau lien</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

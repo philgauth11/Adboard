@@ -8,7 +8,7 @@ python-dotenv==1.0.1
 gunicorn==22.0.0
 psycopg2-binary>=2.9.9,<3
 facebook-business==18.0.4
-google-ads>=24.1.0,<25
+google-ads>=24.1.0
 resend==2.3.0
 pytest==8.2.0
 pytest-flask==1.3.0

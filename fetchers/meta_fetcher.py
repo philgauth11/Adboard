@@ -1,6 +1,7 @@
 import os
 from facebook_business.api import FacebookAdsApi
 from facebook_business.adobjects.adaccount import AdAccount
+from facebook_business.adobjects.user import User
 
 INSIGHT_FIELDS = [
     "date_start", "impressions", "reach", "clicks", "ctr", "cpc",
@@ -49,6 +50,14 @@ def _parse_row(row, extra_fields=None):
     if extra_fields:
         result.update(extra_fields(row))
     return result
+
+def fetch_ad_accounts(access_token=None):
+    token = access_token or os.environ.get("META_ACCESS_TOKEN")
+    if not token:
+        return []
+    FacebookAdsApi.init(access_token=token)
+    accounts = User(fbid="me").get_ad_accounts(fields=["id", "name", "account_status"])
+    return [{"id": a["id"], "name": a["name"], "status": a.get("account_status")} for a in accounts]
 
 def fetch_campaigns(account_id, date_preset="last_30d", access_token=None):
     token = access_token or os.environ.get("META_ACCESS_TOKEN")

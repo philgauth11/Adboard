@@ -15,8 +15,13 @@ access_bp = Blueprint("access", __name__, url_prefix="/admin/access")
 def index():
     members = TeamMember.query.order_by(TeamMember.created_at).all()
     clients = Client.query.filter_by(is_active=True).order_by(Client.name).all()
+    from fetchers.meta_fetcher import fetch_ad_accounts
+    try:
+        meta_accounts = fetch_ad_accounts()
+    except Exception:
+        meta_accounts = []
     return render_template("admin/access.html", members=members, clients=clients,
-                           current_member=current_user)
+                           current_member=current_user, meta_accounts=meta_accounts)
 
 @access_bp.route("/invite", methods=["POST"])
 @require_role("superadmin", "admin")

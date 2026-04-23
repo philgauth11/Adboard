@@ -71,8 +71,18 @@
     <form method="POST" action="{{ url_for('access.new_client') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
       <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
         <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Meta Account ID</label>
-        <input name="meta_account_id" placeholder="act_123456" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Compte Meta Ads</label>
+        {% if meta_accounts %}
+          <select name="meta_account_id" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px;min-width:220px">
+            <option value="">— Aucun —</option>
+            {% for a in meta_accounts %}
+              <option value="{{ a.id }}">{{ a.name }} ({{ a.id }})</option>
+            {% endfor %}
+          </select>
+        {% else %}
+          <input name="meta_account_id" placeholder="act_123456" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+        {% endif %}
+      </div>
       <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Google Customer ID</label>
         <input name="google_customer_id" placeholder="1234567890" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
       <button type="submit" class="btn btn-primary">Ajouter</button>

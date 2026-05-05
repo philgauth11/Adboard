@@ -15,7 +15,7 @@ def login():
         member = TeamMember.query.filter_by(email=email).first()
         if member and member.password_hash and bcrypt.checkpw(password, member.password_hash.encode()):
             login_user(member)
-            member.last_login_at = datetime.now(UTC)
+            member.last_login_at = datetime.utcnow()
             db.session.commit()
             return redirect(url_for("admin.dashboard"))
         flash("Email ou mot de passe incorrect.", "error")

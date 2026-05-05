@@ -33,7 +33,7 @@ def _upsert_metrics(client_id, platform, level, rows):
             ctr=r.get("ctr", 0.0), cpc=r.get("cpc", 0.0), cpm=r.get("cpm", 0.0),
             spend=r.get("spend", 0.0), purchases=r.get("purchases", 0),
             revenue=r.get("revenue", 0.0), roas=r.get("roas", 0.0),
-            synced_at=datetime.now(UTC),
+            synced_at=datetime.utcnow(),
         ))
 
 

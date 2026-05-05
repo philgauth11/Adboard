@@ -35,7 +35,7 @@ def invite():
         flash("Cet email est déjà enregistré.")
         return redirect(url_for("access.index"))
     token = str(uuid.uuid4())
-    expires = datetime.now(UTC) + timedelta(hours=48)
+    expires = datetime.utcnow() + timedelta(hours=48)
     m = TeamMember(email=email, name=name, role=role, invite_token=token, invite_expires_at=expires)
     db.session.add(m); db.session.commit()
     invite_url = url_for("access.accept_invite", token=token, _external=True)
@@ -46,7 +46,7 @@ def invite():
 @access_bp.route("/accept/<string:token>", methods=["GET", "POST"])
 def accept_invite(token):
     m = TeamMember.query.filter_by(invite_token=token).first_or_404()
-    if m.invite_expires_at < datetime.now(UTC).replace(tzinfo=None):
+    if m.invite_expires_at < datetime.utcnow():
         flash("Ce lien d'invitation a expiré.")
         return redirect(url_for("auth.login"))
     if request.method == "POST":

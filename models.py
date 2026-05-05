@@ -70,6 +70,8 @@ class AdMetric(db.Model):
     campaign_name = db.Column(db.String(200))
     adset_id = db.Column(db.String(50))
     adset_name = db.Column(db.String(200))
+    ad_id = db.Column(db.String(50))
+    ad_name = db.Column(db.String(200))
     impressions = db.Column(db.Integer, default=0)
     reach = db.Column(db.Integer, default=0)
     frequency = db.Column(db.Float, default=0.0)

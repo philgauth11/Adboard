@@ -7,17 +7,46 @@
 </div>
 
 <!-- Filters -->
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
   <span style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Période :</span>
-  {% for d,l in [(7,"7 jours"),(30,"30 jours"),(90,"90 jours")] %}
-    <a href="?days={{ d }}&platform={{ platform }}" class="pill {% if days==d %}active{% endif %}">{{ l }}</a>
-  {% endfor %}
+  <select id="range-select" onchange="onRangeChange(this.value)"
+          style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;background:white;color:var(--brun);cursor:pointer">
+    {% for val, label in range_options %}
+      <option value="{{ val }}" {% if range==val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
   <div style="width:1px;height:20px;background:var(--beige);margin:0 8px"></div>
   <span style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Plateforme :</span>
   {% for p,l in [("all","Toutes"),("meta","Meta"),("google","Google")] %}
-    <a href="?days={{ days }}&platform={{ p }}" class="pill {% if platform==p %}active{% endif %}">{{ l }}</a>
+    <a href="?range={{ range }}{% if range=='custom' %}&start={{ custom_start }}&end={{ custom_end }}{% endif %}&platform={{ p }}" class="pill {% if platform==p %}active{% endif %}">{{ l }}</a>
   {% endfor %}
 </div>
+<div id="custom-dates" style="display:{% if range=='custom' %}flex{% else %}none{% endif %};align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <span style="font-size:11px;color:var(--gris)">Du</span>
+  <input type="date" id="start-date" value="{{ custom_start }}"
+         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
+  <span style="font-size:11px;color:var(--gris)">au</span>
+  <input type="date" id="end-date" value="{{ custom_end }}"
+         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
+  <button onclick="applyCustomRange()" class="btn btn-outline" style="font-size:13px;padding:4px 14px">Appliquer</button>
+</div>
+<script>
+function onRangeChange(val) {
+  if (val === 'custom') {
+    document.getElementById('custom-dates').style.display = 'flex';
+  } else {
+    window.location = '?range=' + val + '&platform={{ platform }}';
+  }
+}
+function applyCustomRange() {
+  const start = document.getElementById('start-date').value;
+  const end   = document.getElementById('end-date').value;
+  if (start && end) {
+    window.location = '?range=custom&start=' + start + '&end=' + end + '&platform={{ platform }}';
+  }
+}
+</script>
+<div style="margin-bottom:20px"></div>
 
 <!-- KPIs -->
 <div class="kpi-grid">
@@ -43,7 +72,7 @@
     </tr></thead>
     <tbody>
     {% for row in client_data %}
-      <tr onclick="window.location='/admin/client/{{ row.client.id }}?days={{ days }}'">
+      <tr onclick="window.location='/admin/client/{{ row.client.id }}?range={{ range }}'">
         <td style="font-weight:600">{{ row.client.name }}</td>
         <td>
           {% if row.client.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}

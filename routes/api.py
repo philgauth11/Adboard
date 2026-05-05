@@ -14,11 +14,13 @@ api_bp = Blueprint("api", __name__, url_prefix="/api")
 def client_chart(client_id):
     if not current_user.can_see_client(client_id):
         abort(403)
-    days = int(request.args.get("days", 30))
-    start = date.today() - timedelta(days=days)
+    from routes.admin import _date_range
+    range_str = request.args.get("range", "30d")
+    start, end = _date_range(range_str, request.args.get("start"), request.args.get("end"))
 
     rows = (db.session.query(AdMetric.date, AdMetric.platform, func.sum(AdMetric.spend))
-        .filter(AdMetric.client_id == client_id, AdMetric.level == "campaign", AdMetric.date >= start)
+        .filter(AdMetric.client_id == client_id, AdMetric.level == "campaign",
+                AdMetric.date >= start, AdMetric.date <= end)
         .group_by(AdMetric.date, AdMetric.platform)
         .order_by(AdMetric.date)
         .all())

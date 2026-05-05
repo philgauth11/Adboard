@@ -8,20 +8,110 @@ from extensions import db
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
-def _period_start(days):
-    return date.today() - timedelta(days=days)
+RANGE_OPTIONS = [
+    ("today",     "Aujourd'hui"),
+    ("yesterday", "Hier"),
+    ("7d",        "7 derniers jours"),
+    ("30d",       "30 derniers jours"),
+    ("90d",       "90 derniers jours"),
+    ("this_year", "Cette année"),
+    ("ytd",       "Cumul annuel"),
+    ("custom",    "Personnaliser"),
+]
+
+def _date_range(range_str, custom_start=None, custom_end=None):
+    today = date.today()
+    if range_str == "today":
+        return today, today
+    if range_str == "yesterday":
+        yesterday = today - timedelta(days=1)
+        return yesterday, yesterday
+    if range_str == "7d":
+        return today - timedelta(days=7), today
+    if range_str == "90d":
+        return today - timedelta(days=90), today
+    if range_str in ("this_year", "ytd"):
+        return date(today.year, 1, 1), today
+    if range_str == "custom":
+        try:
+            return date.fromisoformat(custom_start), date.fromisoformat(custom_end)
+        except (ValueError, TypeError):
+            return today - timedelta(days=30), today
+    return today - timedelta(days=30), today  # default: 30d
 
 def _roas_class(roas):
     if roas >= 4:  return "roas-good"
     if roas >= 2:  return "roas-ok"
     return "roas-bad"
 
+def _aggregate_metrics(client_id, level, start, end):
+    q = db.session.query(
+        AdMetric.campaign_id,
+        AdMetric.campaign_name,
+        AdMetric.adset_id,
+        AdMetric.adset_name,
+        AdMetric.ad_id,
+        AdMetric.ad_name,
+        AdMetric.platform,
+        func.sum(AdMetric.spend).label("spend"),
+        func.sum(AdMetric.revenue).label("revenue"),
+        func.sum(AdMetric.clicks).label("clicks"),
+        func.sum(AdMetric.impressions).label("impressions"),
+        func.sum(AdMetric.purchases).label("purchases"),
+        func.sum(AdMetric.reach).label("reach"),
+    ).filter(
+        AdMetric.client_id == client_id,
+        AdMetric.level == level,
+        AdMetric.date >= start,
+        AdMetric.date <= end,
+    )
+
+    if level == "campaign":
+        q = q.group_by(AdMetric.campaign_id, AdMetric.campaign_name, AdMetric.platform)
+    elif level == "adset":
+        q = q.group_by(AdMetric.adset_id, AdMetric.adset_name,
+                       AdMetric.campaign_name, AdMetric.platform)
+    else:  # ad
+        q = q.group_by(AdMetric.ad_id, AdMetric.ad_name,
+                       AdMetric.adset_name, AdMetric.campaign_name, AdMetric.platform)
+
+    rows = q.order_by(func.sum(AdMetric.spend).desc()).all()
+
+    result = []
+    for r in rows:
+        spend       = float(r.spend or 0)
+        revenue     = float(r.revenue or 0)
+        clicks      = int(r.clicks or 0)
+        impressions = int(r.impressions or 0)
+        purchases   = int(r.purchases or 0)
+        result.append({
+            "campaign_id":   r.campaign_id,
+            "campaign_name": r.campaign_name,
+            "adset_id":      r.adset_id,
+            "adset_name":    r.adset_name,
+            "ad_id":         r.ad_id,
+            "ad_name":       r.ad_name,
+            "platform":      r.platform,
+            "spend":         spend,
+            "revenue":       revenue,
+            "clicks":        clicks,
+            "impressions":   impressions,
+            "purchases":     purchases,
+            "ctr":  round(clicks / impressions * 100, 2) if impressions else 0,
+            "cpc":  round(spend / clicks, 2) if clicks else 0,
+            "cpm":  round(spend / impressions * 1000, 2) if impressions else 0,
+            "roas": round(revenue / spend, 2) if spend else 0,
+        })
+    return result
+
 @admin_bp.route("/")
 @require_role("superadmin", "admin", "user")
 def dashboard():
-    days = int(request.args.get("days", 30))
-    platform = request.args.get("platform", "all")
-    start = _period_start(days)
+    range_str = request.args.get("range", "30d")
+    platform  = request.args.get("platform", "all")
+    custom_start = request.args.get("start", "")
+    custom_end   = request.args.get("end", "")
+    start, end = _date_range(range_str, custom_start, custom_end)
 
     clients = Client.query.filter_by(is_active=True).all()
     if current_user.role == "user":
@@ -35,7 +125,7 @@ def dashboard():
             func.sum(AdMetric.clicks).label("clicks"),
             func.sum(AdMetric.purchases).label("purchases"),
         )
-        .filter(AdMetric.date >= start, AdMetric.level == "campaign")
+        .filter(AdMetric.date >= start, AdMetric.date <= end, AdMetric.level == "campaign")
     )
     if platform != "all":
         q = q.filter(AdMetric.platform == platform)
@@ -74,7 +164,8 @@ def dashboard():
     global_roas    = round(global_revenue / global_spend, 2) if global_spend else 0
 
     return render_template("admin/dashboard.html",
-        client_data=client_data, days=days, platform=platform,
+        client_data=client_data, range=range_str, platform=platform,
+        range_options=RANGE_OPTIONS, custom_start=custom_start, custom_end=custom_end,
         global_spend=global_spend, global_revenue=global_revenue,
         global_clicks=global_clicks, global_roas=global_roas,
         active_count=len(clients),
@@ -88,24 +179,28 @@ def client_detail(client_id):
     c = db.session.get(Client, client_id)
     if c is None:
         abort(404)
-    days = int(request.args.get("days", 30))
-    start = _period_start(days)
+    range_str    = request.args.get("range", "30d")
+    custom_start = request.args.get("start", "")
+    custom_end   = request.args.get("end", "")
+    view         = request.args.get("view", "campaign")
+    if view not in ("campaign", "adset", "ad"):
+        view = "campaign"
+    start, end = _date_range(range_str, custom_start, custom_end)
 
-    campaigns = (AdMetric.query
-        .filter_by(client_id=c.id, level="campaign")
-        .filter(AdMetric.date >= start)
-        .order_by(AdMetric.spend.desc())
-        .all()
-    )
+    level = view  # campaign | adset | ad
+    rows = _aggregate_metrics(c.id, level, start, end)
     sync_history = SyncLog.query.filter_by(client_id=c.id).order_by(SyncLog.ran_at.desc()).limit(20).all()
 
-    spend  = sum(m.spend for m in campaigns)
-    revenue= sum(m.revenue for m in campaigns)
-    clicks = sum(m.clicks for m in campaigns)
-    roas   = round(revenue / spend, 2) if spend else 0
+    spend   = sum(r["spend"]   for r in rows)
+    revenue = sum(r["revenue"] for r in rows)
+    clicks  = sum(r["clicks"]  for r in rows)
+    roas    = round(revenue / spend, 2) if spend else 0
 
     return render_template("admin/client_detail.html",
-        c=c, campaigns=campaigns, sync_history=sync_history, days=days,
+        c=c, rows=rows, sync_history=sync_history,
+        range=range_str, range_options=RANGE_OPTIONS,
+        custom_start=custom_start, custom_end=custom_end,
+        view=view,
         spend=spend, revenue=revenue, clicks=clicks, roas=roas,
         roas_class=_roas_class(roas),
     )

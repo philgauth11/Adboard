@@ -1,8 +1,8 @@
 from datetime import datetime, date as date_type, UTC
 from extensions import db
 from models import Client, AdMetric, SyncLog
-from fetchers.meta_fetcher import fetch_campaigns as fetch_meta_campaigns, fetch_adsets as fetch_meta_adsets
-from fetchers.google_fetcher import fetch_campaigns as fetch_google_campaigns, fetch_adsets as fetch_google_adsets
+from fetchers.meta_fetcher import fetch_campaigns as fetch_meta_campaigns, fetch_adsets as fetch_meta_adsets, fetch_ads as fetch_meta_ads
+from fetchers.google_fetcher import fetch_campaigns as fetch_google_campaigns, fetch_adsets as fetch_google_adsets, fetch_ads as fetch_google_ads
 
 
 def _upsert_metrics(client_id, platform, level, rows):
@@ -27,6 +27,7 @@ def _upsert_metrics(client_id, platform, level, rows):
             date=_parse_date(r["date"]),
             campaign_id=r.get("campaign_id"), campaign_name=r.get("campaign_name"),
             adset_id=r.get("adset_id"), adset_name=r.get("adset_name"),
+            ad_id=r.get("ad_id"), ad_name=r.get("ad_name"),
             impressions=r.get("impressions", 0), reach=r.get("reach", 0),
             frequency=r.get("frequency", 0.0), clicks=r.get("clicks", 0),
             ctr=r.get("ctr", 0.0), cpc=r.get("cpc", 0.0), cpm=r.get("cpm", 0.0),
@@ -43,11 +44,13 @@ def sync_client(client):
         jobs += [
             ("meta", "campaign", fetch_meta_campaigns, {"account_id": client.meta_account_id}),
             ("meta", "adset",    fetch_meta_adsets,    {"account_id": client.meta_account_id}),
+            ("meta", "ad",       fetch_meta_ads,       {"account_id": client.meta_account_id}),
         ]
     if client.google_customer_id:
         jobs += [
             ("google", "campaign", fetch_google_campaigns, {"customer_id": client.google_customer_id}),
             ("google", "adset",    fetch_google_adsets,    {"customer_id": client.google_customer_id}),
+            ("google", "ad",       fetch_google_ads,       {"customer_id": client.google_customer_id}),
         ]
 
     for platform, level, fetcher, kwargs in jobs:

@@ -13,10 +13,45 @@
 </div>
 
 <!-- Period filter -->
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <select id="range-select" onchange="onRangeChange(this.value)"
+          style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;background:white;color:var(--brun);cursor:pointer">
+    {% for val, label in range_options %}
+      <option value="{{ val }}" {% if range==val %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+</div>
+<div id="custom-dates" style="display:{% if range=='custom' %}flex{% else %}none{% endif %};align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+  <span style="font-size:11px;color:var(--gris)">Du</span>
+  <input type="date" id="start-date" value="{{ custom_start }}"
+         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
+  <span style="font-size:11px;color:var(--gris)">au</span>
+  <input type="date" id="end-date" value="{{ custom_end }}"
+         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
+  <button onclick="applyCustomRange()" class="btn btn-outline" style="font-size:13px;padding:4px 14px">Appliquer</button>
+</div>
+<script>
+function onRangeChange(val) {
+  if (val === 'custom') {
+    document.getElementById('custom-dates').style.display = 'flex';
+  } else {
+    window.location = '?range=' + val + '&view={{ view }}';
+  }
+}
+function applyCustomRange() {
+  const start = document.getElementById('start-date').value;
+  const end   = document.getElementById('end-date').value;
+  if (start && end) {
+    window.location = '?range=custom&start=' + start + '&end=' + end + '&view={{ view }}';
+  }
+}
+</script>
+<!-- View toggle -->
+{% set base_q = '?range=' + range + ('&start=' + custom_start + '&end=' + custom_end if range == 'custom' else '') %}
 <div style="display:flex;gap:8px;margin-bottom:20px">
-  {% for d,l in [(7,"7 jours"),(30,"30 jours"),(90,"90 jours")] %}
-    <a href="?days={{ d }}" class="pill {% if days==d %}active{% endif %}">{{ l }}</a>
-  {% endfor %}
+  <a href="{{ base_q }}&view=campaign" class="pill {% if view=='campaign' %}active{% endif %}">Campagnes</a>
+  <a href="{{ base_q }}&view=adset"    class="pill {% if view=='adset'    %}active{% endif %}">Groupes d'annonces</a>
+  <a href="{{ base_q }}&view=ad"       class="pill {% if view=='ad'       %}active{% endif %}">Publicités</a>
 </div>
 
 <!-- KPIs -->
@@ -39,25 +74,49 @@
   <div style="padding:16px;height:200px"><canvas id="spendChart"></canvas></div>
 </div>
 
-<!-- Campaigns -->
+<!-- Data table -->
 <div class="card">
-  <div class="card-header"><span class="card-title">Campagnes actives</span></div>
+  <div class="card-header">
+    <span class="card-title">
+      {% if view == 'campaign' %}Campagnes
+      {% elif view == 'adset' %}Groupes d'annonces
+      {% else %}Publicités{% endif %}
+    </span>
+  </div>
   <table>
     <thead><tr>
-      <th>Campagne</th><th></th>
+      {% if view == 'ad' %}
+        <th>Publicité</th><th>Groupe d'annonces</th>
+      {% elif view == 'adset' %}
+        <th>Groupe d'annonces</th><th>Campagne</th>
+      {% else %}
+        <th>Campagne</th>
+      {% endif %}
+      <th></th>
       <th class="right">Dépenses</th><th class="right">Revenus</th>
-      <th class="right">ROAS</th><th class="right">CTR</th>
+      <th class="right">ROAS</th><th class="right">Clics</th><th class="right">CTR</th>
     </tr></thead>
     <tbody>
-    {% for m in campaigns %}
+    {% for r in rows %}
       <tr>
-        <td style="font-weight:600">{{ m.campaign_name }}</td>
-        <td><span class="tag-{{ m.platform }}">{{ m.platform|capitalize }}</span></td>
-        <td class="right">${{ "%.2f"|format(m.spend) }}</td>
-        <td class="right">${{ "%.2f"|format(m.revenue) }}</td>
-        <td class="right"><span class="roas-good">{{ m.roas }}x</span></td>
-        <td class="right">{{ m.ctr }}%</td>
+        {% if view == 'ad' %}
+          <td style="font-weight:600">{{ r.ad_name }}</td>
+          <td style="font-size:11px;color:var(--gris)">{{ r.adset_name }}</td>
+        {% elif view == 'adset' %}
+          <td style="font-weight:600">{{ r.adset_name }}</td>
+          <td style="font-size:11px;color:var(--gris)">{{ r.campaign_name }}</td>
+        {% else %}
+          <td style="font-weight:600">{{ r.campaign_name }}</td>
+        {% endif %}
+        <td><span class="tag-{{ r.platform }}">{{ r.platform|capitalize }}</span></td>
+        <td class="right">${{ "%.2f"|format(r.spend) }}</td>
+        <td class="right">${{ "%.2f"|format(r.revenue) }}</td>
+        <td class="right">{{ r.roas }}x</td>
+        <td class="right">{{ "{:,}".format(r.clicks) }}</td>
+        <td class="right">{{ r.ctr }}%</td>
       </tr>
+    {% else %}
+      <tr><td colspan="8" style="text-align:center;color:var(--gris);padding:24px">Aucune donnée pour cette période.</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -68,7 +127,7 @@
 </div>
 
 <script>
-  fetch("/api/client/{{ c.id }}/chart?days={{ days }}")
+  fetch("/api/client/{{ c.id }}/chart?range={{ range }}{% if range=='custom' %}&start={{ custom_start }}&end={{ custom_end }}{% endif %}")
     .then(r => r.json())
     .then(data => {
       new Chart(document.getElementById("spendChart"), {

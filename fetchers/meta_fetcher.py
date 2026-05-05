@@ -82,3 +82,20 @@ def fetch_adsets(account_id, date_preset="last_30d", access_token=None):
         params={"date_preset": date_preset, "time_increment": 1, "level": "adset"},
     )
     return [_parse_row(r, lambda row: {"adset_id": row.get("adset_id"), "adset_name": row.get("adset_name")}) for r in insights]
+
+def fetch_ads(account_id, date_preset="last_30d", access_token=None):
+    token = access_token or os.environ.get("META_ACCESS_TOKEN")
+    if not token:
+        raise ValueError("META_ACCESS_TOKEN environment variable is not set")
+    FacebookAdsApi.init(access_token=token)
+    account = AdAccount(account_id)
+    insights = account.get_insights(
+        fields=["campaign_id", "campaign_name", "adset_id", "adset_name", "ad_id", "ad_name"] + INSIGHT_FIELDS,
+        params={"date_preset": date_preset, "time_increment": 1, "level": "ad"},
+    )
+    return [_parse_row(r, lambda row: {
+        "adset_id":   row.get("adset_id"),
+        "adset_name": row.get("adset_name"),
+        "ad_id":      row.get("ad_id"),
+        "ad_name":    row.get("ad_name"),
+    }) for r in insights]

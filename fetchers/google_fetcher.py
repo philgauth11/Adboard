@@ -79,3 +79,29 @@ def fetch_adsets(customer_id, days=30):
     """
     return [_parse_row(r, lambda row: {"adset_id": str(row.ad_group.id), "adset_name": row.ad_group.name})
             for r in service.search(customer_id=customer_id, query=query)]
+
+def fetch_ads(customer_id, days=30):
+    client = _build_client()
+    service = client.get_service("GoogleAdsService")
+    start, end = _date_range(days)
+    query = f"""
+        SELECT campaign.id, campaign.name,
+               ad_group.id, ad_group.name,
+               ad_group_ad.ad.id, ad_group_ad.ad.name,
+               segments.date,
+               metrics.impressions, metrics.clicks, metrics.ctr,
+               metrics.average_cpc, metrics.cost_micros,
+               metrics.conversions, metrics.conversions_value
+        FROM ad_group_ad
+        WHERE segments.date BETWEEN '{start}' AND '{end}'
+          AND ad_group_ad.status != 'REMOVED'
+    """
+    def _extra(row):
+        ad_name = getattr(row.ad_group_ad.ad, "name", None) or f"Ad {row.ad_group_ad.ad.id}"
+        return {
+            "adset_id":   str(row.ad_group.id),
+            "adset_name": row.ad_group.name,
+            "ad_id":      str(row.ad_group_ad.ad.id),
+            "ad_name":    ad_name,
+        }
+    return [_parse_row(r, _extra) for r in service.search(customer_id=customer_id, query=query)]

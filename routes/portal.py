@@ -1,13 +1,11 @@
 import bcrypt
-from datetime import date, timedelta, datetime, UTC
+from datetime import datetime, UTC
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
-from models import Client, ClientUser, AdMetric, SyncLog
+from models import Client, ClientUser, SyncLog
 from extensions import db
+from routes.admin import RANGE_OPTIONS, _date_range, _aggregate_metrics
 
 portal_bp = Blueprint("portal", __name__, url_prefix="/client")
-
-def _period_start(days):
-    return date.today() - timedelta(days=days)
 
 def _get_portal_client():
     client_id = session.get("portal_client_id")
@@ -15,23 +13,21 @@ def _get_portal_client():
         return None
     return Client.query.filter_by(id=client_id, is_active=True).first()
 
-@portal_bp.route("/<string:token>")
-def portal_by_token(token):
-    c = Client.query.filter_by(secret_token=token, is_active=True).first_or_404()
-    session["portal_client_id"] = c.id
+def _portal_context(c):
+    range_str    = request.args.get("range", "30d")
+    custom_start = request.args.get("start", "")
+    custom_end   = request.args.get("end", "")
+    view         = request.args.get("view", "campaign")
+    if view not in ("campaign", "adset", "ad"):
+        view = "campaign"
+    start, end = _date_range(range_str, custom_start, custom_end)
 
-    days = int(request.args.get("days", 30))
-    start = _period_start(days)
+    level = view  # campaign | adset | ad
+    rows = _aggregate_metrics(c.id, level, start, end)
 
-    campaigns = (AdMetric.query
-        .filter_by(client_id=c.id, level="campaign")
-        .filter(AdMetric.date >= start)
-        .order_by(AdMetric.spend.desc())
-        .all())
-
-    spend   = sum(m.spend for m in campaigns)
-    revenue = sum(m.revenue for m in campaigns)
-    clicks  = sum(m.clicks for m in campaigns)
+    spend   = sum(r["spend"]   for r in rows)
+    revenue = sum(r["revenue"] for r in rows)
+    clicks  = sum(r["clicks"]  for r in rows)
     roas    = round(revenue / spend, 2) if spend else 0
 
     last_sync = (SyncLog.query
@@ -39,42 +35,26 @@ def portal_by_token(token):
         .order_by(SyncLog.ran_at.desc())
         .first())
 
-    return render_template("portal/client.html",
-        c=c, campaigns=campaigns, days=days,
+    return dict(
+        c=c, rows=rows, view=view,
+        range=range_str, range_options=RANGE_OPTIONS,
+        custom_start=custom_start, custom_end=custom_end,
         spend=spend, revenue=revenue, clicks=clicks, roas=roas,
         last_sync=last_sync,
     )
+
+@portal_bp.route("/<string:token>")
+def portal_by_token(token):
+    c = Client.query.filter_by(secret_token=token, is_active=True).first_or_404()
+    session["portal_client_id"] = c.id
+    return render_template("portal/client.html", **_portal_context(c))
 
 @portal_bp.route("/dashboard")
 def portal_dashboard():
     c = _get_portal_client()
     if not c:
         return redirect(url_for("portal.portal_login"))
-
-    days = int(request.args.get("days", 30))
-    start = _period_start(days)
-
-    campaigns = (AdMetric.query
-        .filter_by(client_id=c.id, level="campaign")
-        .filter(AdMetric.date >= start)
-        .order_by(AdMetric.spend.desc())
-        .all())
-
-    spend   = sum(m.spend for m in campaigns)
-    revenue = sum(m.revenue for m in campaigns)
-    clicks  = sum(m.clicks for m in campaigns)
-    roas    = round(revenue / spend, 2) if spend else 0
-
-    last_sync = (SyncLog.query
-        .filter_by(client_id=c.id, status="success")
-        .order_by(SyncLog.ran_at.desc())
-        .first())
-
-    return render_template("portal/client.html",
-        c=c, campaigns=campaigns, days=days,
-        spend=spend, revenue=revenue, clicks=clicks, roas=roas,
-        last_sync=last_sync,
-    )
+    return render_template("portal/client.html", **_portal_context(c))
 
 @portal_bp.route("/login", methods=["GET", "POST"])
 def portal_login():

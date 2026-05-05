@@ -30,6 +30,24 @@ def create_app(test_config=None):
         from sync import init_scheduler
         init_scheduler(app)
 
+    _ensure_columns(app)
+
     return app
+
+
+def _ensure_columns(app):
+    """Add columns that may be missing from older deployments."""
+    with app.app_context():
+        from sqlalchemy import text
+        try:
+            db.session.execute(text(
+                "ALTER TABLE ad_metrics ADD COLUMN IF NOT EXISTS ad_id VARCHAR(50)"
+            ))
+            db.session.execute(text(
+                "ALTER TABLE ad_metrics ADD COLUMN IF NOT EXISTS ad_name VARCHAR(200)"
+            ))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
 app = create_app()

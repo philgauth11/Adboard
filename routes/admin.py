@@ -45,37 +45,35 @@ def _roas_class(roas):
     return "roas-bad"
 
 def _aggregate_metrics(client_id, level, start, end):
-    q = db.session.query(
-        AdMetric.campaign_id,
-        AdMetric.campaign_name,
-        AdMetric.adset_id,
-        AdMetric.adset_name,
-        AdMetric.ad_id,
-        AdMetric.ad_name,
-        AdMetric.platform,
+    base_agg = [
         func.sum(AdMetric.spend).label("spend"),
         func.sum(AdMetric.revenue).label("revenue"),
         func.sum(AdMetric.clicks).label("clicks"),
         func.sum(AdMetric.impressions).label("impressions"),
         func.sum(AdMetric.purchases).label("purchases"),
         func.sum(AdMetric.reach).label("reach"),
-    ).filter(
+    ]
+    base_filter = [
         AdMetric.client_id == client_id,
         AdMetric.level == level,
         AdMetric.date >= start,
         AdMetric.date <= end,
-    )
+    ]
 
     if level == "campaign":
-        q = q.group_by(AdMetric.campaign_id, AdMetric.campaign_name, AdMetric.platform)
+        cols = [AdMetric.campaign_id, AdMetric.campaign_name, AdMetric.platform]
     elif level == "adset":
-        q = q.group_by(AdMetric.adset_id, AdMetric.adset_name,
-                       AdMetric.campaign_name, AdMetric.platform)
+        cols = [AdMetric.adset_id, AdMetric.adset_name,
+                AdMetric.campaign_name, AdMetric.platform]
     else:  # ad
-        q = q.group_by(AdMetric.ad_id, AdMetric.ad_name,
-                       AdMetric.adset_name, AdMetric.campaign_name, AdMetric.platform)
+        cols = [AdMetric.ad_id, AdMetric.ad_name,
+                AdMetric.adset_name, AdMetric.campaign_name, AdMetric.platform]
 
-    rows = q.order_by(func.sum(AdMetric.spend).desc()).all()
+    rows = (db.session.query(*cols, *base_agg)
+            .filter(*base_filter)
+            .group_by(*cols)
+            .order_by(func.sum(AdMetric.spend).desc())
+            .all())
 
     result = []
     for r in rows:
@@ -84,24 +82,27 @@ def _aggregate_metrics(client_id, level, start, end):
         clicks      = int(r.clicks or 0)
         impressions = int(r.impressions or 0)
         purchases   = int(r.purchases or 0)
-        result.append({
-            "campaign_id":   r.campaign_id,
-            "campaign_name": r.campaign_name,
-            "adset_id":      r.adset_id,
-            "adset_name":    r.adset_name,
-            "ad_id":         r.ad_id,
-            "ad_name":       r.ad_name,
-            "platform":      r.platform,
-            "spend":         spend,
-            "revenue":       revenue,
-            "clicks":        clicks,
-            "impressions":   impressions,
-            "purchases":     purchases,
+        base = {
+            "campaign_id": None, "campaign_name": None,
+            "adset_id": None,    "adset_name": None,
+            "ad_id": None,       "ad_name": None,
+            "platform": r.platform,
+            "spend": spend, "revenue": revenue, "clicks": clicks,
+            "impressions": impressions, "purchases": purchases,
             "ctr":  round(clicks / impressions * 100, 2) if impressions else 0,
             "cpc":  round(spend / clicks, 2) if clicks else 0,
             "cpm":  round(spend / impressions * 1000, 2) if impressions else 0,
             "roas": round(revenue / spend, 2) if spend else 0,
-        })
+        }
+        if level == "campaign":
+            base.update({"campaign_id": r.campaign_id, "campaign_name": r.campaign_name})
+        elif level == "adset":
+            base.update({"adset_id": r.adset_id, "adset_name": r.adset_name,
+                         "campaign_name": r.campaign_name})
+        else:
+            base.update({"ad_id": r.ad_id, "ad_name": r.ad_name,
+                         "adset_name": r.adset_name, "campaign_name": r.campaign_name})
+        result.append(base)
     return result
 
 @admin_bp.route("/")
@@ -188,10 +189,7 @@ def client_detail(client_id):
     start, end = _date_range(range_str, custom_start, custom_end)
 
     level = view  # campaign | adset | ad
-    try:
-        rows = _aggregate_metrics(c.id, level, start, end)
-    except Exception as exc:
-        return f"<pre>Erreur DB: {exc}</pre>", 500
+    rows = _aggregate_metrics(c.id, level, start, end)
     sync_history = SyncLog.query.filter_by(client_id=c.id).order_by(SyncLog.ran_at.desc()).limit(20).all()
 
     spend   = sum(r["spend"]   for r in rows)

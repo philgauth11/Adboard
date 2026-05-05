@@ -4,8 +4,5 @@ nixPkgs = ["python311", "postgresql"]
 [phases.install]
 cmds = ["pip install -r requirements.txt"]
 
-[phases.build]
-cmds = ["flask db upgrade"]
-
 [start]
-cmd = "gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app"
+cmd = "flask db upgrade && gunicorn --workers 1 --bind 0.0.0.0:$PORT app:app"

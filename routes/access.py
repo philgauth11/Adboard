@@ -46,7 +46,7 @@ def invite():
 @access_bp.route("/accept/<string:token>", methods=["GET", "POST"])
 def accept_invite(token):
     m = TeamMember.query.filter_by(invite_token=token).first_or_404()
-    if m.invite_expires_at < datetime.now(UTC):
+    if m.invite_expires_at < datetime.now(UTC).replace(tzinfo=None):
         flash("Ce lien d'invitation a expiré.")
         return redirect(url_for("auth.login"))
     if request.method == "POST":

@@ -45,7 +45,9 @@ def manual_sync(client_id):
     if c is None:
         abort(404)
     from sync import sync_client
-    sync_client(c)
+    errors = sync_client(c)
+    if errors:
+        return jsonify({"status": "error", "errors": errors}), 200
     return jsonify({"status": "ok"})
 
 @api_bp.route("/sync/all", methods=["POST"])

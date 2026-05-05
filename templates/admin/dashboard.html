@@ -37,8 +37,17 @@ function syncClient(id) {
   btn.disabled = true;
   fetch('/api/sync/' + id, { method: 'POST' })
     .then(r => r.json())
-    .then(() => { btn.textContent = '✓'; btn.style.color = '#2d9e6b'; })
-    .catch(() => { btn.textContent = '!'; btn.disabled = false; });
+    .then(data => {
+      if (data.status === 'error') {
+        btn.textContent = '⚠ ' + data.errors[0];
+        btn.style.color = '#E95526';
+        btn.disabled = false;
+      } else {
+        btn.textContent = '✓';
+        btn.style.color = '#2d9e6b';
+      }
+    })
+    .catch(() => { btn.textContent = '! Erreur réseau'; btn.disabled = false; });
 }
 function onRangeChange(val) {
   if (val === 'custom') {

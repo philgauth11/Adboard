@@ -53,6 +53,7 @@ def sync_client(client):
             ("google", "ad",       fetch_google_ads,       {"customer_id": client.google_customer_id}),
         ]
 
+    errors = []
     for platform, level, fetcher, kwargs in jobs:
         try:
             rows = fetcher(**kwargs)
@@ -61,12 +62,17 @@ def sync_client(client):
                 client_id=client.id, platform=platform,
                 status="success", rows_fetched=len(rows),
             ))
+            db.session.commit()
         except Exception as exc:
+            db.session.rollback()
+            error_msg = str(exc)
+            errors.append(f"{platform}/{level}: {error_msg}")
             db.session.add(SyncLog(
                 client_id=client.id, platform=platform,
-                status="error", error_message=str(exc),
+                status="error", error_message=error_msg,
             ))
-        db.session.commit()
+            db.session.commit()
+    return errors
 
 
 def sync_all_clients(app):

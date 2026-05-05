@@ -31,6 +31,15 @@
   <button onclick="applyCustomRange()" class="btn btn-outline" style="font-size:13px;padding:4px 14px">Appliquer</button>
 </div>
 <script>
+function syncClient(id) {
+  const btn = document.getElementById('sync-' + id);
+  btn.textContent = '…';
+  btn.disabled = true;
+  fetch('/api/sync/' + id, { method: 'POST' })
+    .then(r => r.json())
+    .then(() => { btn.textContent = '✓'; btn.style.color = '#2d9e6b'; })
+    .catch(() => { btn.textContent = '!'; btn.disabled = false; });
+}
 function onRangeChange(val) {
   if (val === 'custom') {
     document.getElementById('custom-dates').style.display = 'flex';
@@ -82,11 +91,12 @@ function applyCustomRange() {
         <td class="right">${{ "%.0f"|format(row.revenue) }}</td>
         <td class="right"><span class="{{ row.roas_class }}">{{ row.roas }}x</span></td>
         <td class="right">{{ "{:,}".format(row.clicks) }}</td>
-        <td class="right">
+        <td class="right" onclick="event.stopPropagation()">
+          <button id="sync-{{ row.client.id }}" onclick="syncClient({{ row.client.id }})" class="btn btn-outline" style="font-size:11px;padding:2px 8px">↻ Sync</button>
           {% if row.last_sync %}
-            <span class="sync-ok">✓ {{ row.last_sync.strftime('%H:%M') }}</span>
+            <span class="sync-ok" style="font-size:11px;display:block">✓ {{ row.last_sync.strftime('%d/%m %H:%M') }}</span>
           {% else %}
-            <span class="sync-err">Jamais</span>
+            <span class="sync-err" style="font-size:11px;display:block">Jamais</span>
           {% endif %}
         </td>
       </tr>

@@ -188,7 +188,10 @@ def client_detail(client_id):
     start, end = _date_range(range_str, custom_start, custom_end)
 
     level = view  # campaign | adset | ad
-    rows = _aggregate_metrics(c.id, level, start, end)
+    try:
+        rows = _aggregate_metrics(c.id, level, start, end)
+    except Exception as exc:
+        return f"<pre>Erreur DB: {exc}</pre>", 500
     sync_history = SyncLog.query.filter_by(client_id=c.id).order_by(SyncLog.ran_at.desc()).limit(20).all()
 
     spend   = sum(r["spend"]   for r in rows)

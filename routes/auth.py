@@ -26,3 +26,26 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    from flask_login import current_user
+    error = None
+    if request.method == "POST":
+        current_pw = request.form.get("current_password", "").encode()
+        new_pw = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        if not bcrypt.checkpw(current_pw, current_user.password_hash.encode()):
+            error = "Mot de passe actuel incorrect."
+        elif len(new_pw) < 8:
+            error = "Le nouveau mot de passe doit contenir au moins 8 caractères."
+        elif new_pw != confirm:
+            error = "Les deux mots de passe ne correspondent pas."
+        else:
+            current_user.password_hash = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+            db.session.commit()
+            flash("Mot de passe modifié avec succès.")
+            return redirect(url_for("admin.dashboard"))
+    return render_template("auth/change_password.html", error=error)

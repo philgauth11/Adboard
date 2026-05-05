@@ -18,13 +18,19 @@ function syncNow() {
   btn.disabled = true;
   fetch("/api/sync/{{ c.id }}", { method: "POST" })
     .then(r => r.json())
-    .then(() => {
-      btn.textContent = "✓ Sync terminée — recharge la page";
-      btn.style.color = "#2d9e6b";
-      btn.style.borderColor = "#2d9e6b";
+    .then(data => {
+      if (data.status === "error") {
+        btn.textContent = "⚠ " + data.errors[0];
+        btn.style.color = "#E95526";
+        btn.disabled = false;
+      } else {
+        btn.textContent = "✓ Sync terminée — recharge la page";
+        btn.style.color = "#2d9e6b";
+        btn.style.borderColor = "#2d9e6b";
+      }
     })
     .catch(() => {
-      btn.textContent = "Erreur — réessaie";
+      btn.textContent = "Erreur réseau — réessaie";
       btn.disabled = false;
     });
 }
@@ -137,6 +143,27 @@ function applyCustomRange() {
       </tr>
     {% else %}
       <tr><td colspan="10" style="text-align:center;color:var(--gris);padding:24px">Aucune donnée pour cette période.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Sync logs -->
+<div class="card" style="margin-top:16px">
+  <div class="card-header"><span class="card-title">Historique des syncs</span></div>
+  <table>
+    <thead><tr><th>Date</th><th>Plateforme</th><th>Statut</th><th>Lignes</th><th>Erreur</th></tr></thead>
+    <tbody>
+    {% for s in sync_history %}
+      <tr>
+        <td style="font-size:12px">{{ s.ran_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td><span class="tag-{{ s.platform }}">{{ s.platform }}</span></td>
+        <td><span class="{{ 'sync-ok' if s.status == 'success' else 'sync-err' }}">{{ s.status }}</span></td>
+        <td class="right">{{ s.rows_fetched or 0 }}</td>
+        <td style="font-size:11px;color:var(--gris);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.error_message or '' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:16px">Aucune sync enregistrée.</td></tr>
     {% endfor %}
     </tbody>
   </table>

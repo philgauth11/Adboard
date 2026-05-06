@@ -109,14 +109,6 @@ def _aggregate_metrics(client_id, level, start, end):
     return result
 
 
-@admin_bp.route("/access/")
-@admin_bp.route("/access/<path:subpath>", methods=["GET", "POST"])
-@require_role("admin")
-def access_stub(subpath=""):
-    """Stub route — access blueprint not yet rewritten. Admin-only enforced."""
-    abort(501)
-
-
 @admin_bp.route("/")
 @require_role("admin", "client")
 def dashboard():

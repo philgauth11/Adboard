@@ -25,7 +25,7 @@ class TeamMember(db.Model, UserMixin):
     email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256))
     name = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # superadmin | admin | user
+    role = db.Column(db.String(20), nullable=False)  # admin | client
     invite_token = db.Column(db.String(36))
     invite_expires_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
@@ -34,7 +34,7 @@ class TeamMember(db.Model, UserMixin):
     assigned_clients = db.relationship("TeamMemberClient", backref="member", lazy="dynamic", cascade="all, delete-orphan")
 
     def can_see_client(self, client_id):
-        if self.role in ("superadmin", "admin"):
+        if self.role == "admin":
             return True
         return self.assigned_clients.filter_by(client_id=client_id).first() is not None
 
@@ -49,22 +49,12 @@ class TeamMemberClient(db.Model):
     )
 
 
-class ClientUser(db.Model):
-    __tablename__ = "client_users"
-    id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256))
-    created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
-    last_login_at = db.Column(db.DateTime)
-
-
 class AdMetric(db.Model):
     __tablename__ = "ad_metrics"
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.Integer, db.ForeignKey("clients.id", ondelete="CASCADE"), nullable=False)
     platform = db.Column(db.String(10), nullable=False)  # meta | google
-    level = db.Column(db.String(10), nullable=False)      # campaign | adset
+    level = db.Column(db.String(10), nullable=False)      # campaign | adset | ad
     date = db.Column(db.Date, nullable=False)
     campaign_id = db.Column(db.String(50))
     campaign_name = db.Column(db.String(200))

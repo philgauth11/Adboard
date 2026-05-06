@@ -19,6 +19,7 @@ RANGE_OPTIONS = [
     ("custom",    "Personnaliser"),
 ]
 
+
 def _date_range(range_str, custom_start=None, custom_end=None):
     today = date.today()
     if range_str == "today":
@@ -37,12 +38,14 @@ def _date_range(range_str, custom_start=None, custom_end=None):
             return date.fromisoformat(custom_start), date.fromisoformat(custom_end)
         except (ValueError, TypeError):
             return today - timedelta(days=30), today
-    return today - timedelta(days=30), today  # default: 30d
+    return today - timedelta(days=30), today
+
 
 def _roas_class(roas):
     if roas >= 4:  return "roas-good"
     if roas >= 2:  return "roas-ok"
     return "roas-bad"
+
 
 def _aggregate_metrics(client_id, level, start, end):
     base_agg = [
@@ -105,8 +108,17 @@ def _aggregate_metrics(client_id, level, start, end):
         result.append(base)
     return result
 
+
+@admin_bp.route("/access/")
+@admin_bp.route("/access/<path:subpath>", methods=["GET", "POST"])
+@require_role("admin")
+def access_stub(subpath=""):
+    """Stub route — access blueprint not yet rewritten. Admin-only enforced."""
+    abort(501)
+
+
 @admin_bp.route("/")
-@require_role("superadmin", "admin", "user")
+@require_role("admin", "client")
 def dashboard():
     range_str = request.args.get("range", "30d")
     platform  = request.args.get("platform", "all")
@@ -115,7 +127,7 @@ def dashboard():
     start, end = _date_range(range_str, custom_start, custom_end)
 
     clients = Client.query.filter_by(is_active=True).all()
-    if current_user.role == "user":
+    if current_user.role == "client":
         allowed = {tc.client_id for tc in current_user.assigned_clients}
         clients = [c for c in clients if c.id in allowed]
 
@@ -172,9 +184,10 @@ def dashboard():
         active_count=len(clients),
     )
 
-@admin_bp.route("/client/<int:client_id>")
-@require_role("superadmin", "admin", "user")
-def client_detail(client_id):
+
+@admin_bp.route("/marque/<int:client_id>")
+@require_role("admin", "client")
+def marque_detail(client_id):
     if not current_user.can_see_client(client_id):
         abort(403)
     c = db.session.get(Client, client_id)
@@ -188,8 +201,7 @@ def client_detail(client_id):
         view = "campaign"
     start, end = _date_range(range_str, custom_start, custom_end)
 
-    level = view  # campaign | adset | ad
-    rows = _aggregate_metrics(c.id, level, start, end)
+    rows = _aggregate_metrics(c.id, view, start, end)
     sync_history = SyncLog.query.filter_by(client_id=c.id).order_by(SyncLog.ran_at.desc()).limit(20).all()
 
     spend   = sum(r["spend"]   for r in rows)
@@ -197,7 +209,7 @@ def client_detail(client_id):
     clicks  = sum(r["clicks"]  for r in rows)
     roas    = round(revenue / spend, 2) if spend else 0
 
-    return render_template("admin/client_detail.html",
+    return render_template("admin/marque_detail.html",
         c=c, rows=rows, sync_history=sync_history,
         range=range_str, range_options=RANGE_OPTIONS,
         custom_start=custom_start, custom_end=custom_end,

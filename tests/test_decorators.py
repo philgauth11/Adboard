@@ -3,7 +3,7 @@ from models import TeamMember
 from extensions import db
 
 
-def _login(client_fixture, db, role="user"):
+def _login(client_fixture, db, role="admin"):
     pw = bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode()
     m = TeamMember(email=f"{role}@tap.com", name="Test", role=role, password_hash=pw)
     db.session.add(m)
@@ -12,8 +12,14 @@ def _login(client_fixture, db, role="user"):
     return m
 
 
-def test_superadmin_can_access_admin_dashboard(client, db):
-    _login(client, db, role="superadmin")
+def test_admin_can_access_dashboard(client, db):
+    _login(client, db, role="admin")
+    r = client.get("/admin/")
+    assert r.status_code == 200
+
+
+def test_client_can_access_dashboard(client, db):
+    _login(client, db, role="client")
     r = client.get("/admin/")
     assert r.status_code == 200
 
@@ -23,7 +29,7 @@ def test_unauthenticated_redirected_to_login(client):
     assert r.status_code == 302
 
 
-def test_wrong_role_gets_403(client, db):
+def test_client_cannot_access_access_page(client, db):
     _login(client, db, role="client")
-    r = client.get("/admin/")
+    r = client.get("/admin/access/")
     assert r.status_code == 403

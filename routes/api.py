@@ -9,7 +9,8 @@ import threading
 
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
-@api_bp.route("/client/<int:client_id>/chart")
+
+@api_bp.route("/marque/<int:client_id>/chart")
 @login_required
 def client_chart(client_id):
     if not current_user.can_see_client(client_id):
@@ -36,6 +37,7 @@ def client_chart(client_id):
         "google": [by_date[d]["google"] for d in labels],
     })
 
+
 @api_bp.route("/sync/<int:client_id>", methods=["POST"])
 @login_required
 def manual_sync(client_id):
@@ -50,10 +52,11 @@ def manual_sync(client_id):
         return jsonify({"status": "error", "errors": errors}), 200
     return jsonify({"status": "ok"})
 
+
 @api_bp.route("/sync/all", methods=["POST"])
 @login_required
 def manual_sync_all():
-    if current_user.role not in ("superadmin", "admin"):
+    if current_user.role != "admin":
         abort(403)
     from sync import sync_all_clients
     app = current_app._get_current_object()

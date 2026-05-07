@@ -52,7 +52,7 @@
         </td>
         <td>
           <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline"
-                onsubmit="return confirm('Désactiver la marque {{ c.name }} ?')">
+                onsubmit="return confirm('Désactiver la marque ' + {{ c.name | tojson }} + ' ?')">
             <button class="btn btn-danger">Désactiver</button>
           </form>
         </td>
@@ -159,7 +159,7 @@
         <td>
           {% if m.id != current_member.id %}
           <form method="POST" action="{{ url_for('access.revoke', member_id=m.id) }}" style="display:inline"
-                onsubmit="return confirm('Révoquer l\'accès de {{ m.name }} ?')">
+                onsubmit="return confirm('Révoquer l\'accès de ' + {{ m.name | tojson }} + ' ?')">
             <button class="btn btn-danger">Révoquer</button>
           </form>
           {% endif %}

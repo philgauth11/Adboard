@@ -24,12 +24,6 @@ def create_app(test_config=None):
     app.register_blueprint(access_bp)
     app.register_blueprint(api_bp)
 
-    try:
-        from routes.portal import portal_bp
-        app.register_blueprint(portal_bp)
-    except ImportError:
-        pass
-
     if not app.testing:
         from sync import init_scheduler
         init_scheduler(app)

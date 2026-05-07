@@ -156,7 +156,7 @@ function applyCustomRange() {
     <tbody>
     {% for s in sync_history %}
       <tr>
-        <td style="font-size:12px">{{ s.ran_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td style="font-size:12px">{{ s.ran_at | localtime }}</td>
         <td><span class="tag-{{ s.platform }}">{{ s.platform }}</span></td>
         <td><span class="{{ 'sync-ok' if s.status == 'success' else 'sync-err' }}">{{ s.status }}</span></td>
         <td class="right">{{ s.rows_fetched or 0 }}</td>

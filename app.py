@@ -1,6 +1,11 @@
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from flask import Flask
 from config import Config
 from extensions import db, login_manager, migrate
+
+_TZ = ZoneInfo("America/Toronto")
+
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -11,6 +16,14 @@ def create_app(test_config=None):
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+
+    @app.template_filter('localtime')
+    def localtime_filter(dt):
+        if dt is None:
+            return ""
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+        return dt.astimezone(_TZ).strftime('%d/%m %H:%M')
 
     import models  # noqa: F401 — ensure models are registered with SQLAlchemy metadata
 

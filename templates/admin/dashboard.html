@@ -103,7 +103,7 @@ function applyCustomRange() {
         <td class="right" onclick="event.stopPropagation()">
           <button id="sync-{{ row.client.id }}" onclick="syncClient({{ row.client.id }})" class="btn btn-outline" style="font-size:11px;padding:2px 8px">↻ Sync</button>
           {% if row.last_sync %}
-            <span class="sync-ok" style="font-size:11px;display:block">✓ {{ row.last_sync.strftime('%d/%m %H:%M') }}</span>
+            <span class="sync-ok" style="font-size:11px;display:block">✓ {{ row.last_sync | localtime }}</span>
           {% else %}
             <span class="sync-err" style="font-size:11px;display:block">Jamais</span>
           {% endif %}

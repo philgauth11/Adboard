@@ -1,4 +1,5 @@
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
+from zoneinfo import ZoneInfo
 from flask import Blueprint, render_template, request, abort
 from flask_login import current_user
 from decorators import require_role
@@ -7,6 +8,12 @@ from models import Client, AdMetric, SyncLog
 from extensions import db
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+_TZ = ZoneInfo("America/Toronto")
+
+
+def _today():
+    return datetime.now(_TZ).date()
 
 RANGE_OPTIONS = [
     ("today",     "Aujourd'hui"),
@@ -21,7 +28,7 @@ RANGE_OPTIONS = [
 
 
 def _date_range(range_str, custom_start=None, custom_end=None):
-    today = date.today()
+    today = _today()
     if range_str == "today":
         return today, today
     if range_str == "yesterday":

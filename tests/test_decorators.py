@@ -32,4 +32,4 @@ def test_unauthenticated_redirected_to_login(client):
 def test_client_cannot_access_access_page(client, db):
     _login(client, db, role="client")
     r = client.get("/admin/access/")
-    assert r.status_code in (403, 404)
+    assert r.status_code == 403

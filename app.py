@@ -16,17 +16,13 @@ def create_app(test_config=None):
 
     from routes.auth import auth_bp
     from routes.admin import admin_bp
+    from routes.access import access_bp
     from routes.api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(access_bp)
     app.register_blueprint(api_bp)
-
-    try:
-        from routes.access import access_bp
-        app.register_blueprint(access_bp)
-    except ImportError:
-        pass
 
     try:
         from routes.portal import portal_bp

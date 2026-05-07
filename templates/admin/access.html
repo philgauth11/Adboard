@@ -105,8 +105,8 @@
           </code>
         </td>
         <td>
-          <form method="POST" action="{{ url_for('access.rotate_client_token', client_id=c.id) }}" style="display:inline" onsubmit="return confirm('Générer un nouveau lien ? L\'ancien ne fonctionnera plus.')">
-            <button class="btn btn-outline">↻ Nouveau lien</button>
+          <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline" onsubmit="return confirm('Désactiver cette marque ?')">
+            <button class="btn btn-danger">Désactiver</button>
           </form>
         </td>
       </tr>

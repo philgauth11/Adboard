@@ -7,6 +7,7 @@ Create Date: 2026-05-06 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = 'f7a8b9c0d1e2'
 down_revision = 'd0620082110b'
@@ -21,12 +22,8 @@ def upgrade():
     op.execute("UPDATE team_members SET role = 'admin' WHERE role IN ('superadmin', 'user')")
 
     # 2 & 3. Migrer client_users → team_members puis supprimer la table
-    # Vérifie que client_users existe avant d'agir (peut ne pas exister en dev ou si déjà migrée)
-    result = bind.execute(sa.text(
-        "SELECT COUNT(*) FROM information_schema.tables "
-        "WHERE table_name = 'client_users'"
-    ))
-    if result.scalar() > 0:
+    # inspect() fonctionne sur SQLite et PostgreSQL (contrairement à information_schema)
+    if 'client_users' in inspect(bind).get_table_names():
         bind.execute(sa.text("""
             INSERT INTO team_members (email, name, role, password_hash, created_at)
             SELECT cu.email, cu.email, 'client', cu.password_hash, cu.created_at

@@ -52,7 +52,7 @@ def invite():
         for brand_id in request.form.getlist("brand_ids"):
             try:
                 db.session.add(TeamMemberClient(team_member_id=m.id, client_id=int(brand_id)))
-            except (ValueError, Exception):
+            except ValueError:
                 pass
     db.session.commit()
     invite_url = url_for("access.accept_invite", token=token, _external=True)
@@ -120,8 +120,10 @@ def deactivate_client(client_id):
 @require_role("admin")
 def assign_brands(member_id):
     m = db.session.get(TeamMember, member_id)
-    if m is None or m.role != "client":
+    if m is None:
         abort(404)
+    if m.role != "client":
+        abort(403)
     TeamMemberClient.query.filter_by(team_member_id=m.id).delete()
     for brand_id in request.form.getlist("brand_ids"):
         try:

@@ -15,22 +15,27 @@ depends_on = None
 
 
 def upgrade():
+    bind = op.get_bind()
+
     # 1. Fusionner superadmin + user → admin
     op.execute("UPDATE team_members SET role = 'admin' WHERE role IN ('superadmin', 'user')")
 
-    # 2. Migrer ClientUser → TeamMember avec role='client'
-    # WHERE NOT EXISTS évite les conflits si l'email existe déjà dans team_members
-    op.execute("""
-        INSERT INTO team_members (email, name, role, password_hash, created_at)
-        SELECT cu.email, cu.email, 'client', cu.password_hash, cu.created_at
-        FROM client_users cu
-        WHERE NOT EXISTS (
-            SELECT 1 FROM team_members tm WHERE tm.email = cu.email
-        )
-    """)
-
-    # 3. Supprimer la table client_users
-    op.drop_table('client_users')
+    # 2 & 3. Migrer client_users → team_members puis supprimer la table
+    # Vérifie que client_users existe avant d'agir (peut ne pas exister en dev ou si déjà migrée)
+    result = bind.execute(sa.text(
+        "SELECT COUNT(*) FROM information_schema.tables "
+        "WHERE table_name = 'client_users'"
+    ))
+    if result.scalar() > 0:
+        bind.execute(sa.text("""
+            INSERT INTO team_members (email, name, role, password_hash, created_at)
+            SELECT cu.email, cu.email, 'client', cu.password_hash, cu.created_at
+            FROM client_users cu
+            WHERE NOT EXISTS (
+                SELECT 1 FROM team_members tm WHERE tm.email = cu.email
+            )
+        """))
+        op.drop_table('client_users')
 
 
 def downgrade():

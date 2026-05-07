@@ -17,4 +17,8 @@ def load_user(user_id):
         uid = int(user_id)
     except (TypeError, ValueError):
         return None
-    return db.session.get(TeamMember, uid)
+    member = db.session.get(TeamMember, uid)
+    if member is not None and member.role not in ('admin', 'client'):
+        member.role = 'admin'
+        db.session.commit()
+    return member

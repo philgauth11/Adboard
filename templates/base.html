@@ -17,7 +17,7 @@
     {% if current_user.is_authenticated %}
       <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Vue globale</a>
       {% if current_user.role == 'admin' %}
-      <a class="nav-link {% if request.blueprint == 'access' %}active{% endif %}" href="/admin/access/">Accès</a>
+      <a class="nav-link {% if request.blueprint == 'access' %}active{% endif %}" href="{{ url_for('access.index') }}">Accès</a>
       {% endif %}
     {% endif %}
     <div class="nav-right">

@@ -72,25 +72,25 @@ function applyCustomRange() {
   <div class="kpi"><div class="kpi-label">Revenus générés</div><div class="kpi-value">${{ "%.0f"|format(global_revenue) }}</div></div>
   <div class="kpi"><div class="kpi-label">ROAS moyen</div><div class="kpi-value accent">{{ global_roas }}x</div></div>
   <div class="kpi"><div class="kpi-label">Clics totaux</div><div class="kpi-value">{{ "{:,}".format(global_clicks) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Clients actifs</div><div class="kpi-value">{{ active_count }}</div></div>
+  <div class="kpi"><div class="kpi-label">Marques actives</div><div class="kpi-value">{{ active_count }}</div></div>
 </div>
 
 <!-- Clients table -->
 <div class="card">
   <div class="card-header">
-    <span class="card-title">Tous les clients</span>
+    <span class="card-title">Toutes les marques</span>
     <span class="card-meta">Classé par dépenses ↓</span>
   </div>
   <table>
     <thead><tr>
-      <th>Client</th><th>Plateformes</th>
+      <th>Marque</th><th>Plateformes</th>
       <th class="right">Dépenses</th><th class="right">Revenus</th>
       <th class="right">ROAS</th><th class="right">Clics</th>
       <th class="right">Sync</th>
     </tr></thead>
     <tbody>
     {% for row in client_data %}
-      <tr onclick="window.location='/admin/client/{{ row.client.id }}?range={{ range }}'">
+      <tr onclick="window.location='/admin/marque/{{ row.client.id }}?range={{ range }}'">
         <td style="font-weight:600">{{ row.client.name }}</td>
         <td>
           {% if row.client.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
@@ -110,7 +110,7 @@ function applyCustomRange() {
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="7" style="text-align:center;color:var(--gris);padding:24px">Aucun client — ajoutes-en un dans Accès.</td></tr>
+      <tr><td colspan="7" style="text-align:center;color:var(--gris);padding:24px">Aucune marque — ajoutes-en une dans Accès.</td></tr>
     {% endfor %}
     </tbody>
   </table>

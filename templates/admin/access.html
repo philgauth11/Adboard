@@ -6,72 +6,21 @@
   <h1 style="font-size:18px;font-weight:700">Gestion des accès</h1>
 </div>
 
-<!-- Team Members -->
-<div class="card">
+<!-- Section Marques -->
+<div class="card" style="margin-bottom:20px">
   <div class="card-header">
-    <span class="card-title">Équipe ({{ members|length }})</span>
-    <button onclick="document.getElementById('invite-form').style.display='block'" class="btn btn-primary">+ Inviter</button>
+    <span class="card-title">Marques ({{ clients|length }})</span>
+    <button onclick="document.getElementById('brand-form').style.display='block'" class="btn btn-primary">+ Ajouter une marque</button>
   </div>
 
-  <div id="invite-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
-    <form method="POST" action="{{ url_for('access.invite') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
-        <input name="name" required placeholder="Marie Leblanc" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
-        <input name="email" type="email" required placeholder="marie@tap.com" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Rôle</label>
-        <select name="role" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
-          <option value="user">Utilisateur</option>
-          <option value="admin">Admin</option>
-          {% if current_member.role == 'superadmin' %}<option value="superadmin">Super Admin</option>{% endif %}
-        </select></div>
-      <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
-    </form>
-  </div>
-
-  <table>
-    <thead><tr><th>Membre</th><th>Rôle</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
-    <tbody>
-    {% for m in members %}
-      <tr>
-        <td>
-          <div style="font-weight:600">{{ m.name }}</div>
-          <div style="font-size:10px;color:var(--gris)">{{ m.email }}</div>
-        </td>
-        <td><span class="badge badge-{{ m.role }}">{{ m.role|capitalize }}</span></td>
-        <td>
-          {% if m.password_hash %}<span class="sync-ok">● Actif</span>
-          {% elif m.invite_token %}<span style="font-size:10px;color:#f39c12">◐ Invitation envoyée</span>
-          {% else %}<span class="sync-err">Accès révoqué</span>{% endif %}
-        </td>
-        <td style="font-size:11px;color:var(--gris)">
-          {{ m.last_login_at.strftime('%d %b à %H:%M') if m.last_login_at else '—' }}
-        </td>
-        <td>
-          {% if m.id != current_member.id %}
-          <form method="POST" action="{{ url_for('access.revoke', member_id=m.id) }}" style="display:inline" onsubmit="return confirm('Révoquer l\'accès de {{ m.name }} ?')">
-            <button class="btn btn-danger">Révoquer</button>
-          </form>
-          {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<!-- Clients -->
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">Clients ({{ clients|length }})</span>
-    <button onclick="document.getElementById('client-form').style.display='block'" class="btn btn-primary">+ Ajouter un client</button>
-  </div>
-
-  <div id="client-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
+  <div id="brand-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
     <form method="POST" action="{{ url_for('access.new_client') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
-        <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Compte Meta Ads</label>
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
+        <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Compte Meta Ads</label>
         {% if meta_accounts %}
           <select name="meta_account_id" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px;min-width:220px">
             <option value="">— Aucun —</option>
@@ -83,14 +32,16 @@
           <input name="meta_account_id" placeholder="act_123456" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
         {% endif %}
       </div>
-      <div><label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Google Customer ID</label>
-        <input name="google_customer_id" placeholder="1234567890" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px"></div>
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Google Customer ID</label>
+        <input name="google_customer_id" placeholder="1234567890" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      </div>
       <button type="submit" class="btn btn-primary">Ajouter</button>
     </form>
   </div>
 
   <table>
-    <thead><tr><th>Client</th><th>Plateformes</th><th>Lien portail</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Marque</th><th>Plateformes</th><th>Actions</th></tr></thead>
     <tbody>
     {% for c in clients %}
       <tr>
@@ -100,18 +51,128 @@
           {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
         </td>
         <td>
-          <code style="font-size:10px;background:var(--fond);border:1px solid var(--bordure);padding:3px 8px;border-radius:4px">
-            /client/{{ c.secret_token[:12] }}...
-          </code>
-        </td>
-        <td>
-          <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline" onsubmit="return confirm('Désactiver cette marque ?')">
+          <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline"
+                onsubmit="return confirm('Désactiver la marque {{ c.name }} ?')">
             <button class="btn btn-danger">Désactiver</button>
           </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3" style="text-align:center;color:var(--gris);padding:24px">Aucune marque active.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Section Utilisateurs -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Utilisateurs ({{ members|length }})</span>
+    <button onclick="document.getElementById('invite-form').style.display='block'" class="btn btn-primary">+ Inviter</button>
+  </div>
+
+  <div id="invite-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
+    <form method="POST" action="{{ url_for('access.invite') }}" style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
+        <input name="name" required placeholder="Marie Leblanc" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
+        <input name="email" type="email" required placeholder="marie@tap.com" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      </div>
+      <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Rôle</label>
+        <select name="role" id="invite-role" onchange="toggleBrandPicker(this.value)"
+                style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+          <option value="admin">Admin</option>
+          <option value="client">Client</option>
+        </select>
+      </div>
+      <div id="invite-brand-picker" style="display:none">
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Marques assignées</label>
+        <div style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;border:1px solid var(--bordure);border-radius:6px;padding:8px;background:white">
+          {% for c in clients %}
+            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" name="brand_ids" value="{{ c.id }}"> {{ c.name }}
+            </label>
+          {% else %}
+            <span style="font-size:12px;color:var(--gris)">Aucune marque disponible</span>
+          {% endfor %}
+        </div>
+      </div>
+      <div style="align-self:flex-end">
+        <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
+      </div>
+    </form>
+  </div>
+
+  <table>
+    <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Marques</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for m in members %}
+      <tr>
+        <td>
+          <div style="font-weight:600">{{ m.name }}</div>
+          <div style="font-size:10px;color:var(--gris)">{{ m.email }}</div>
+        </td>
+        <td><span class="badge badge-{{ m.role }}">{{ 'Admin' if m.role == 'admin' else 'Client' }}</span></td>
+        <td>
+          {% if m.role == 'client' %}
+            <div style="font-size:11px;color:var(--gris);margin-bottom:4px">
+              {% set assigned = member_brands.get(m.id, []) %}
+              {% if assigned %}
+                {% for cid in assigned %}{{ client_map[cid].name if cid in client_map else '?' }}{% if not loop.last %}, {% endif %}{% endfor %}
+              {% else %}
+                <span style="color:var(--gris)">Aucune</span>
+              {% endif %}
+            </div>
+            <button onclick="document.getElementById('brands-{{ m.id }}').style.display = document.getElementById('brands-{{ m.id }}').style.display === 'none' ? 'block' : 'none'"
+                    class="btn btn-outline" style="font-size:10px;padding:2px 8px">Modifier</button>
+            <div id="brands-{{ m.id }}" style="display:none;margin-top:8px">
+              <form method="POST" action="{{ url_for('access.assign_brands', member_id=m.id) }}"
+                    style="display:flex;flex-direction:column;gap:4px">
+                <div style="max-height:120px;overflow-y:auto;border:1px solid var(--bordure);border-radius:6px;padding:8px;background:white">
+                  {% for c in clients %}
+                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+                      <input type="checkbox" name="brand_ids" value="{{ c.id }}"
+                             {% if c.id in member_brands.get(m.id, []) %}checked{% endif %}>
+                      {{ c.name }}
+                    </label>
+                  {% endfor %}
+                </div>
+                <button type="submit" class="btn btn-primary" style="font-size:11px;padding:4px 12px;align-self:flex-start">Sauvegarder</button>
+              </form>
+            </div>
+          {% else %}
+            <span style="font-size:11px;color:var(--gris)">Accès total</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if m.password_hash %}<span class="sync-ok">● Actif</span>
+          {% elif m.invite_token %}<span style="font-size:10px;color:#f39c12">◐ Invitation envoyée</span>
+          {% else %}<span class="sync-err">Accès révoqué</span>{% endif %}
+        </td>
+        <td style="font-size:11px;color:var(--gris)">
+          {{ m.last_login_at.strftime('%d %b à %H:%M') if m.last_login_at else '—' }}
+        </td>
+        <td>
+          {% if m.id != current_member.id %}
+          <form method="POST" action="{{ url_for('access.revoke', member_id=m.id) }}" style="display:inline"
+                onsubmit="return confirm('Révoquer l\'accès de {{ m.name }} ?')">
+            <button class="btn btn-danger">Révoquer</button>
+          </form>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+<script>
+function toggleBrandPicker(role) {
+  document.getElementById('invite-brand-picker').style.display = role === 'client' ? 'block' : 'none';
+}
+</script>
 {% endblock %}

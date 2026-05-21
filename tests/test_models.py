@@ -10,6 +10,20 @@ def test_client_gets_secret_token_automatically(db):
     assert len(c.secret_token) == 36
 
 
+def test_client_brand_type_defaults_to_leadgen(db):
+    c = Client(name="Boutique Lux", slug="boutique-lux")
+    db.session.add(c)
+    db.session.commit()
+    assert c.brand_type == "leadgen"
+
+
+def test_client_brand_type_can_be_ecommerce(db):
+    c = Client(name="Shop", slug="shop", brand_type="ecommerce")
+    db.session.add(c)
+    db.session.commit()
+    assert c.brand_type == "ecommerce"
+
+
 def test_admin_can_see_all_clients(db):
     c = Client(name="Client A", slug="client-a")
     db.session.add(c)
@@ -33,6 +47,35 @@ def test_client_user_sees_only_assigned_clients(db):
     db.session.commit()
     assert m.can_see_client(c1.id) is True
     assert m.can_see_client(c2.id) is False
+
+
+def test_ad_metric_stores_leads(db):
+    c = Client(name="Client A", slug="client-a")
+    db.session.add(c)
+    db.session.commit()
+    m = AdMetric(
+        client_id=c.id, platform="meta", level="campaign",
+        date=date(2026, 4, 1), campaign_id="123", campaign_name="Spring Sale",
+        impressions=10000, clicks=200, spend=100.0,
+        leads=12,
+    )
+    db.session.add(m)
+    db.session.commit()
+    assert m.leads == 12
+
+
+def test_ad_metric_leads_defaults_to_zero(db):
+    c = Client(name="Client A", slug="client-a")
+    db.session.add(c)
+    db.session.commit()
+    m = AdMetric(
+        client_id=c.id, platform="meta", level="campaign",
+        date=date(2026, 4, 1), campaign_id="123", campaign_name="Spring",
+        spend=100.0,
+    )
+    db.session.add(m)
+    db.session.commit()
+    assert m.leads == 0
 
 
 def test_ad_metric_stores_all_fields(db):

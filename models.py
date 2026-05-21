@@ -12,6 +12,7 @@ class Client(db.Model):
     meta_account_id = db.Column(db.String(50))
     google_customer_id = db.Column(db.String(50))
     secret_token = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
+    brand_type = db.Column(db.String(20), nullable=False, default="leadgen")  # leadgen | ecommerce
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
 
@@ -70,7 +71,8 @@ class AdMetric(db.Model):
     cpc = db.Column(db.Float, default=0.0)
     cpm = db.Column(db.Float, default=0.0)
     spend = db.Column(db.Float, default=0.0)
-    purchases = db.Column(db.Integer, default=0)
+    leads = db.Column(db.Integer, default=0)      # leadgen: formulaires + pixel lead events
+    purchases = db.Column(db.Integer, default=0)  # ecommerce: achats complétés
     revenue = db.Column(db.Float, default=0.0)
     roas = db.Column(db.Float, default=0.0)
     synced_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())

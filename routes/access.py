@@ -97,10 +97,29 @@ def new_client():
     name = request.form.get("name", "").strip()
     meta_id   = request.form.get("meta_account_id", "").strip() or None
     google_id = request.form.get("google_customer_id", "").strip() or None
+    brand_type = request.form.get("brand_type", "leadgen")
+    if brand_type not in ("leadgen", "ecommerce"):
+        brand_type = "leadgen"
     slug = name.lower().replace(" ", "-")
-    c = Client(name=name, slug=slug, meta_account_id=meta_id, google_customer_id=google_id)
+    c = Client(name=name, slug=slug, meta_account_id=meta_id,
+               google_customer_id=google_id, brand_type=brand_type)
     db.session.add(c); db.session.commit()
     flash(f"Marque '{name}' ajoutée.")
+    return redirect(url_for("access.index"))
+
+
+@access_bp.route("/client/<int:client_id>/edit", methods=["POST"])
+@require_role("admin")
+def edit_client(client_id):
+    c = db.session.get(Client, client_id)
+    if c is None:
+        abort(404)
+    brand_type = request.form.get("brand_type", "leadgen")
+    if brand_type not in ("leadgen", "ecommerce"):
+        brand_type = "leadgen"
+    c.brand_type = brand_type
+    db.session.commit()
+    flash(f"Type de marque mis à jour pour '{c.name}'.")
     return redirect(url_for("access.index"))
 
 

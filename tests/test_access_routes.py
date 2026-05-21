@@ -99,3 +99,35 @@ def test_assign_brands_updates_client_links(client, db):
     links = TeamMemberClient.query.filter_by(team_member_id=m.id).all()
     assert len(links) == 1
     assert links[0].client_id == c2.id
+
+
+def test_new_client_defaults_to_leadgen(client, db):
+    _login_admin(client, db)
+    client.post("/admin/access/client/new",
+        data={"name": "Test Marque", "meta_account_id": "act_999"},
+        follow_redirects=True)
+    c = Client.query.filter_by(slug="test-marque").first()
+    assert c is not None
+    assert c.brand_type == "leadgen"
+
+
+def test_new_client_accepts_ecommerce_type(client, db):
+    _login_admin(client, db)
+    client.post("/admin/access/client/new",
+        data={"name": "Boutique XYZ", "meta_account_id": "act_888", "brand_type": "ecommerce"},
+        follow_redirects=True)
+    c = Client.query.filter_by(slug="boutique-xyz").first()
+    assert c is not None
+    assert c.brand_type == "ecommerce"
+
+
+def test_edit_client_brand_type(client, db):
+    _login_admin(client, db)
+    c = Client(name="Marque Test", slug="marque-test", brand_type="leadgen")
+    db.session.add(c); db.session.commit()
+    r = client.post(f"/admin/access/client/{c.id}/edit",
+        data={"brand_type": "ecommerce"},
+        follow_redirects=True)
+    assert r.status_code == 200
+    db.session.refresh(c)
+    assert c.brand_type == "ecommerce"

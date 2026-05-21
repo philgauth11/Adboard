@@ -2,6 +2,7 @@ import os
 from datetime import date, timedelta
 from google.ads.googleads.client import GoogleAdsClient
 
+
 def _build_client():
     required = [
         "GOOGLE_ADS_DEVELOPER_TOKEN",
@@ -20,15 +21,18 @@ def _build_client():
         "use_proto_plus": True,
     })
 
+
 def _date_range(days):
     end = date.today()
     start = end - timedelta(days=days)
     return start.isoformat(), end.isoformat()
 
+
 def _parse_row(row, extra_fields=None):
     spend = row.metrics.cost_micros / 1_000_000
     revenue = float(row.metrics.conversions_value)
     impressions = row.metrics.impressions
+    conversions = int(row.metrics.conversions)
     result = {
         "date": row.segments.date,
         "campaign_id": str(row.campaign.id),
@@ -41,13 +45,15 @@ def _parse_row(row, extra_fields=None):
         "cpc": round(row.metrics.average_cpc / 1_000_000, 2),
         "cpm": round(spend / impressions * 1000, 2) if impressions else 0.0,
         "spend": round(spend, 2),
-        "purchases": int(row.metrics.conversions),
+        "leads": conversions,      # Google conversions stored in both fields;
+        "purchases": conversions,  # brand_type determines which gets displayed
         "revenue": round(revenue, 2),
         "roas": round(revenue / spend, 2) if spend else 0.0,
     }
     if extra_fields:
         result.update(extra_fields(row))
     return result
+
 
 def fetch_campaigns(customer_id, days=30):
     client = _build_client()
@@ -64,6 +70,7 @@ def fetch_campaigns(customer_id, days=30):
     """
     return [_parse_row(r) for r in service.search(customer_id=customer_id, query=query)]
 
+
 def fetch_adsets(customer_id, days=30):
     client = _build_client()
     service = client.get_service("GoogleAdsService")
@@ -79,6 +86,7 @@ def fetch_adsets(customer_id, days=30):
     """
     return [_parse_row(r, lambda row: {"adset_id": str(row.ad_group.id), "adset_name": row.ad_group.name})
             for r in service.search(customer_id=customer_id, query=query)]
+
 
 def fetch_ads(customer_id, days=30):
     client = _build_client()

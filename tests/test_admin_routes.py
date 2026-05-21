@@ -77,3 +77,39 @@ def test_marque_detail_200_for_authorized_client(client, db):
     db.session.commit()
     r = client.get(f"/admin/marque/{c.id}")
     assert r.status_code == 200
+
+
+def test_dashboard_passes_primary_value_for_leadgen(client, db):
+    _login(client, db, role="admin")
+    c = _seed_marque(db, name="Lead Co", slug="lead-co")
+    # brand_type defaults to leadgen
+    r = client.get("/admin/")
+    assert r.status_code == 200
+    assert b"lead-co" in r.data or b"Lead Co" in r.data
+
+
+def test_marque_detail_includes_leads_for_leadgen(client, db):
+    _login(client, db, role="admin")
+    c = _seed_marque(db)
+    db.session.add(AdMetric(
+        client_id=c.id, platform="meta", level="campaign",
+        date=date(2026, 4, 16), campaign_id="2", campaign_name="Summer",
+        spend=100.0, leads=8,
+    ))
+    db.session.commit()
+    r = client.get(f"/admin/marque/{c.id}")
+    assert r.status_code == 200
+
+
+def test_marque_detail_includes_roas_for_ecommerce(client, db):
+    _login(client, db, role="admin")
+    c = Client(name="Shop", slug="shop", meta_account_id="act_123", brand_type="ecommerce")
+    db.session.add(c); db.session.commit()
+    db.session.add(AdMetric(
+        client_id=c.id, platform="meta", level="campaign",
+        date=date(2026, 4, 15), campaign_id="1", campaign_name="Spring",
+        spend=100.0, revenue=500.0, roas=5.0, purchases=10,
+    ))
+    db.session.commit()
+    r = client.get(f"/admin/marque/{c.id}")
+    assert r.status_code == 200

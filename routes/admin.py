@@ -15,6 +15,7 @@ _TZ = ZoneInfo("America/Toronto")
 def _today():
     return datetime.now(_TZ).date()
 
+
 RANGE_OPTIONS = [
     ("today",     "Aujourd'hui"),
     ("yesterday", "Hier"),
@@ -60,6 +61,7 @@ def _aggregate_metrics(client_id, level, start, end):
         func.sum(AdMetric.revenue).label("revenue"),
         func.sum(AdMetric.clicks).label("clicks"),
         func.sum(AdMetric.impressions).label("impressions"),
+        func.sum(AdMetric.leads).label("leads"),
         func.sum(AdMetric.purchases).label("purchases"),
         func.sum(AdMetric.reach).label("reach"),
     ]
@@ -92,17 +94,20 @@ def _aggregate_metrics(client_id, level, start, end):
         clicks      = int(r.clicks or 0)
         impressions = int(r.impressions or 0)
         purchases   = int(r.purchases or 0)
+        leads       = int(r.leads or 0)
         base = {
             "campaign_id": None, "campaign_name": None,
             "adset_id": None,    "adset_name": None,
             "ad_id": None,       "ad_name": None,
             "platform": r.platform,
             "spend": spend, "revenue": revenue, "clicks": clicks,
-            "impressions": impressions, "purchases": purchases,
+            "impressions": impressions, "purchases": purchases, "leads": leads,
             "ctr":  round(clicks / impressions * 100, 2) if impressions else 0,
             "cpc":  round(spend / clicks, 2) if clicks else 0,
             "cpm":  round(spend / impressions * 1000, 2) if impressions else 0,
             "roas": round(revenue / spend, 2) if spend else 0,
+            "cpa":  round(spend / purchases, 2) if purchases else 0,
+            "cpl":  round(spend / leads, 2) if leads else 0,
         }
         if level == "campaign":
             base.update({"campaign_id": r.campaign_id, "campaign_name": r.campaign_name})
@@ -136,6 +141,7 @@ def dashboard():
             func.sum(AdMetric.revenue).label("revenue"),
             func.sum(AdMetric.clicks).label("clicks"),
             func.sum(AdMetric.purchases).label("purchases"),
+            func.sum(AdMetric.leads).label("leads"),
         )
         .filter(AdMetric.date >= start, AdMetric.date <= end, AdMetric.level == "campaign")
     )
@@ -154,15 +160,36 @@ def dashboard():
     client_data = []
     for c in clients:
         r = rows.get(c.id)
-        spend = float(r.spend or 0) if r else 0
-        revenue = float(r.revenue or 0) if r else 0
-        clicks = int(r.clicks or 0) if r else 0
+        spend     = float(r.spend or 0) if r else 0
+        revenue   = float(r.revenue or 0) if r else 0
+        clicks    = int(r.clicks or 0) if r else 0
+        purchases = int(r.purchases or 0) if r else 0
+        leads     = int(r.leads or 0) if r else 0
+
+        if c.brand_type == "ecommerce":
+            primary_value = purchases
+            primary_label = "achats"
+            cost_per_result = round(spend / purchases, 2) if purchases else 0
+            cost_label = "CPA"
+        else:
+            primary_value = leads
+            primary_label = "leads"
+            cost_per_result = round(spend / leads, 2) if leads else 0
+            cost_label = "CPL"
+
+        # Backward-compat keys still used by dashboard.html (Task 8 will clean up)
         roas = round(revenue / spend, 2) if spend else 0
+
         client_data.append({
             "client": c,
             "spend": spend,
             "revenue": revenue,
             "clicks": clicks,
+            "primary_value": primary_value,
+            "primary_label": primary_label,
+            "cost_per_result": cost_per_result,
+            "cost_label": cost_label,
+            # backward-compat for current template
             "roas": roas,
             "roas_class": _roas_class(roas),
             "last_sync": last_sync.get(c.id),
@@ -171,15 +198,17 @@ def dashboard():
     client_data.sort(key=lambda x: x["spend"], reverse=True)
 
     global_spend   = sum(x["spend"] for x in client_data)
-    global_revenue = sum(x["revenue"] for x in client_data)
     global_clicks  = sum(x["clicks"] for x in client_data)
+    global_leads   = sum(x["primary_value"] for x in client_data if x["client"].brand_type != "ecommerce")
+    global_revenue = sum(x["revenue"] for x in client_data if x["client"].brand_type == "ecommerce")
     global_roas    = round(global_revenue / global_spend, 2) if global_spend else 0
 
     return render_template("admin/dashboard.html",
         client_data=client_data, range=range_str, platform=platform,
         range_options=RANGE_OPTIONS, custom_start=custom_start, custom_end=custom_end,
-        global_spend=global_spend, global_revenue=global_revenue,
-        global_clicks=global_clicks, global_roas=global_roas,
+        global_spend=global_spend, global_clicks=global_clicks,
+        global_leads=global_leads, global_revenue=global_revenue,
+        global_roas=global_roas,
         active_count=len(clients),
     )
 
@@ -203,16 +232,22 @@ def marque_detail(client_id):
     rows = _aggregate_metrics(c.id, view, start, end)
     sync_history = SyncLog.query.filter_by(client_id=c.id).order_by(SyncLog.ran_at.desc()).limit(20).all()
 
-    spend   = sum(r["spend"]   for r in rows)
-    revenue = sum(r["revenue"] for r in rows)
-    clicks  = sum(r["clicks"]  for r in rows)
-    roas    = round(revenue / spend, 2) if spend else 0
+    spend     = sum(r["spend"]     for r in rows)
+    revenue   = sum(r["revenue"]   for r in rows)
+    clicks    = sum(r["clicks"]    for r in rows)
+    leads     = sum(r["leads"]     for r in rows)
+    purchases = sum(r["purchases"] for r in rows)
+    cpl       = round(spend / leads,     2) if leads     else 0
+    cpa       = round(spend / purchases, 2) if purchases else 0
+    roas      = round(revenue / spend,   2) if spend     else 0
 
     return render_template("admin/marque_detail.html",
         c=c, rows=rows, sync_history=sync_history,
         range=range_str, range_options=RANGE_OPTIONS,
         custom_start=custom_start, custom_end=custom_end,
         view=view,
-        spend=spend, revenue=revenue, clicks=clicks, roas=roas,
+        spend=spend, revenue=revenue, clicks=clicks,
+        leads=leads, purchases=purchases,
+        cpl=cpl, cpa=cpa, roas=roas,
         roas_class=_roas_class(roas),
     )

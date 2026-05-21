@@ -1,24 +1,56 @@
 from unittest.mock import patch, MagicMock
-from fetchers.meta_fetcher import fetch_campaigns, fetch_adsets, _extract_action, _compute_roas
+from fetchers.meta_fetcher import (
+    fetch_campaigns, fetch_adsets,
+    _extract_action, _compute_roas, _extract_leads,
+)
+
 
 def test_extract_action_returns_value():
     actions = [{"action_type": "purchase", "value": "3"}]
     assert _extract_action(actions, "purchase") == 3.0
 
+
 def test_extract_action_returns_zero_when_missing():
     assert _extract_action([], "purchase") == 0.0
     assert _extract_action(None, "purchase") == 0.0
+
 
 def test_compute_roas():
     action_values = [{"action_type": "offsite_conversion.fb_pixel_purchase", "value": "500"}]
     assert _compute_roas(action_values, "100") == 5.0
 
+
 def test_compute_roas_zero_spend():
     assert _compute_roas([], "0") == 0.0
+
 
 def test_compute_roas_purchase_fallback():
     action_values = [{"action_type": "purchase", "value": "300"}]
     assert _compute_roas(action_values, "100") == 3.0
+
+
+def test_extract_leads_from_lead_ads():
+    actions = [{"action_type": "lead", "value": "7"}]
+    assert _extract_leads(actions) == 7
+
+
+def test_extract_leads_from_pixel_lead():
+    actions = [{"action_type": "offsite_conversion.fb_pixel_lead", "value": "4"}]
+    assert _extract_leads(actions) == 4
+
+
+def test_extract_leads_sums_both_types():
+    actions = [
+        {"action_type": "lead", "value": "3"},
+        {"action_type": "offsite_conversion.fb_pixel_lead", "value": "5"},
+    ]
+    assert _extract_leads(actions) == 8
+
+
+def test_extract_leads_returns_zero_when_empty():
+    assert _extract_leads([]) == 0
+    assert _extract_leads(None) == 0
+
 
 def _mock_insight_row(campaign_id="111", campaign_name="Spring", adset_id=None, adset_name=None):
     row = {
@@ -33,13 +65,17 @@ def _mock_insight_row(campaign_id="111", campaign_name="Spring", adset_id=None, 
         "cpc": "0.50",
         "cpm": "5.00",
         "spend": "100.00",
-        "actions": [{"action_type": "purchase", "value": "5"}],
+        "actions": [
+            {"action_type": "purchase", "value": "5"},
+            {"action_type": "lead", "value": "3"},
+        ],
         "action_values": [{"action_type": "offsite_conversion.fb_pixel_purchase", "value": "500"}],
     }
     if adset_id is not None:
         row["adset_id"] = adset_id
         row["adset_name"] = adset_name
     return row
+
 
 @patch("fetchers.meta_fetcher.AdAccount")
 @patch("fetchers.meta_fetcher.FacebookAdsApi")
@@ -53,6 +89,8 @@ def test_fetch_campaigns_returns_normalized_rows(mock_api, mock_account):
     assert r["spend"] == 100.0
     assert r["roas"] == 5.0
     assert r["purchases"] == 5
+    assert r["leads"] == 3
+
 
 @patch("fetchers.meta_fetcher.AdAccount")
 @patch("fetchers.meta_fetcher.FacebookAdsApi")
@@ -62,3 +100,4 @@ def test_fetch_adsets_includes_adset_fields(mock_api, mock_account):
     rows = fetch_adsets("act_123456", access_token="fake_token")
     assert rows[0]["adset_id"] == "222"
     assert rows[0]["adset_name"] == "Lookalike"
+    assert "leads" in rows[0]

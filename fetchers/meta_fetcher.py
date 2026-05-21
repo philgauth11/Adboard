@@ -8,6 +8,7 @@ INSIGHT_FIELDS = [
     "spend", "actions", "action_values", "frequency", "cpm",
 ]
 
+
 def _extract_action(actions, action_type):
     if not actions:
         return 0.0
@@ -16,15 +17,26 @@ def _extract_action(actions, action_type):
             return float(a.get("value", 0))
     return 0.0
 
+
 def _extract_action_primary(actions):
-    """Fallback to 'purchase' if 'offsite_conversion.fb_pixel_purchase' is not available."""
     val = _extract_action(actions, "offsite_conversion.fb_pixel_purchase")
     return val if val else _extract_action(actions, "purchase")
+
+
+def _extract_leads(actions):
+    """Sum Lead Ads native forms + pixel lead events (campaigns use one or the other)."""
+    if not actions:
+        return 0
+    lead_ads = _extract_action(actions, "lead")
+    pixel_lead = _extract_action(actions, "offsite_conversion.fb_pixel_lead")
+    return int(lead_ads + pixel_lead)
+
 
 def _compute_roas(action_values, spend):
     revenue = _extract_action_primary(action_values)
     spend_val = float(spend) if spend else 0
     return round(revenue / spend_val, 2) if spend_val else 0.0
+
 
 def _parse_row(row, extra_fields=None):
     row = dict(row)
@@ -43,6 +55,7 @@ def _parse_row(row, extra_fields=None):
         "cpc": round(float(row.get("cpc", 0)), 2),
         "cpm": round(float(row.get("cpm", 0)), 2),
         "spend": round(float(spend), 2),
+        "leads": _extract_leads(actions),
         "purchases": int(_extract_action_primary(actions)),
         "revenue": round(_extract_action_primary(action_values), 2),
         "roas": _compute_roas(action_values, spend),
@@ -51,6 +64,7 @@ def _parse_row(row, extra_fields=None):
         result.update(extra_fields(row))
     return result
 
+
 def fetch_ad_accounts(access_token=None):
     token = access_token or os.environ.get("META_ACCESS_TOKEN")
     if not token:
@@ -58,6 +72,7 @@ def fetch_ad_accounts(access_token=None):
     FacebookAdsApi.init(access_token=token)
     accounts = User(fbid="me").get_ad_accounts(fields=["id", "name", "account_status"])
     return [{"id": a["id"], "name": a["name"], "status": a.get("account_status")} for a in accounts]
+
 
 def fetch_campaigns(account_id, date_preset="last_30d", access_token=None):
     token = access_token or os.environ.get("META_ACCESS_TOKEN")
@@ -71,6 +86,7 @@ def fetch_campaigns(account_id, date_preset="last_30d", access_token=None):
     )
     return [_parse_row(r) for r in insights]
 
+
 def fetch_adsets(account_id, date_preset="last_30d", access_token=None):
     token = access_token or os.environ.get("META_ACCESS_TOKEN")
     if not token:
@@ -82,6 +98,7 @@ def fetch_adsets(account_id, date_preset="last_30d", access_token=None):
         params={"date_preset": date_preset, "time_increment": 1, "level": "adset"},
     )
     return [_parse_row(r, lambda row: {"adset_id": row.get("adset_id"), "adset_name": row.get("adset_name")}) for r in insights]
+
 
 def fetch_ads(account_id, date_preset="last_30d", access_token=None):
     token = access_token or os.environ.get("META_ACCESS_TOKEN")

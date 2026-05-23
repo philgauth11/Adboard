@@ -20,6 +20,13 @@
         <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
       </div>
       <div>
+        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Type</label>
+        <select name="brand_type" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+          <option value="leadgen">Génération de leads</option>
+          <option value="ecommerce">E-commerce</option>
+        </select>
+      </div>
+      <div>
         <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Compte Meta Ads</label>
         {% if meta_accounts %}
           <select name="meta_account_id" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px;min-width:220px">
@@ -41,16 +48,30 @@
   </div>
 
   <table>
-    <thead><tr><th>Marque</th><th>Plateformes</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Marque</th><th>Type</th><th>Plateformes</th><th>Actions</th></tr></thead>
     <tbody>
     {% for c in clients %}
       <tr>
         <td style="font-weight:600">{{ c.name }}</td>
         <td>
+          {% if c.brand_type == 'ecommerce' %}
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e0f0e8;color:#1a5c38">E-commerce</span>
+          {% else %}
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e8f0ff;color:#1a3a7a">Lead gen</span>
+          {% endif %}
+        </td>
+        <td>
           {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
           {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
         </td>
-        <td>
+        <td style="display:flex;gap:8px;align-items:center">
+          <form method="POST" action="{{ url_for('access.edit_client', client_id=c.id) }}" style="display:inline-flex;align-items:center;gap:4px">
+            <select name="brand_type" style="font-size:11px;padding:3px 6px;border:1px solid var(--bordure);border-radius:4px">
+              <option value="leadgen" {% if c.brand_type == 'leadgen' %}selected{% endif %}>Lead gen</option>
+              <option value="ecommerce" {% if c.brand_type == 'ecommerce' %}selected{% endif %}>E-commerce</option>
+            </select>
+            <button type="submit" class="btn btn-outline" style="font-size:11px;padding:2px 8px">Changer</button>
+          </form>
           <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline"
                 onsubmit="return confirm('Désactiver la marque ' + {{ c.name | tojson }} + ' ?')">
             <button class="btn btn-danger">Désactiver</button>
@@ -58,7 +79,7 @@
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="3" style="text-align:center;color:var(--gris);padding:24px">Aucune marque active.</td></tr>
+      <tr><td colspan="4" style="text-align:center;color:var(--gris);padding:24px">Aucune marque active.</td></tr>
     {% endfor %}
     </tbody>
   </table>

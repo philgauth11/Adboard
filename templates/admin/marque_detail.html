@@ -73,12 +73,28 @@ function applyCustomRange() {
 </script>
 
 <!-- KPIs -->
-<div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+{% if c.brand_type == 'ecommerce' %}
+<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
   <div class="kpi"><div class="kpi-label">Budget dépensé</div><div class="kpi-value">${{ "%.2f"|format(spend) }}</div></div>
   <div class="kpi"><div class="kpi-label">Revenus</div><div class="kpi-value" style="color:#2d9e6b">${{ "%.2f"|format(revenue) }}</div></div>
   <div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value accent">{{ roas }}x</div></div>
-  <div class="kpi"><div class="kpi-label">Clics</div><div class="kpi-value">{{ "{:,}".format(clicks) }}</div></div>
+  <div class="kpi"><div class="kpi-label">Achats</div><div class="kpi-value">{{ purchases }}</div></div>
+  <div class="kpi"><div class="kpi-label">CPA</div><div class="kpi-value">${{ "%.2f"|format(cpa) }}</div></div>
 </div>
+{% else %}
+<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+  <div class="kpi"><div class="kpi-label">Budget dépensé</div><div class="kpi-value">${{ "%.2f"|format(spend) }}</div></div>
+  <div class="kpi"><div class="kpi-label">Leads</div><div class="kpi-value" style="color:#1a3a7a">{{ leads }}</div></div>
+  <div class="kpi"><div class="kpi-label">Coût / lead</div><div class="kpi-value accent">${{ "%.2f"|format(cpl) }}</div></div>
+  <div class="kpi"><div class="kpi-label">Clics</div><div class="kpi-value">{{ "{:,}".format(clicks) }}</div></div>
+  <div class="kpi"><div class="kpi-label">CTR moyen</div>
+    <div class="kpi-value">
+      {% set total_imp = rows | sum(attribute='impressions') %}
+      {% if total_imp > 0 %}{{ "%.2f"|format(clicks / total_imp * 100) }} %{% else %}—{% endif %}
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <!-- Chart -->
 <div class="card" style="margin-bottom:16px">
@@ -115,9 +131,19 @@ function applyCustomRange() {
         <th>Campagne</th>
       {% endif %}
       <th></th>
-      <th class="right">Dépenses</th><th class="right">Revenus</th>
-      <th class="right">ROAS</th><th class="right">Clics</th>
-      <th class="right">CTR</th><th class="right">CPC</th><th class="right">Impressions</th>
+      <th class="right">Dépenses</th>
+      {% if c.brand_type == 'ecommerce' %}
+        <th class="right">Revenus</th>
+        <th class="right">ROAS</th>
+        <th class="right">Achats</th>
+        <th class="right">CPA</th>
+      {% else %}
+        <th class="right">Leads</th>
+        <th class="right">CPL</th>
+      {% endif %}
+      <th class="right">Clics</th>
+      <th class="right">CTR</th>
+      <th class="right">Impressions</th>
     </tr></thead>
     <tbody>
     {% for r in rows %}
@@ -134,15 +160,21 @@ function applyCustomRange() {
         {% endif %}
         <td><span class="tag-{{ r.platform }}">{{ r.platform|capitalize }}</span></td>
         <td class="right">${{ "%.2f"|format(r.spend) }}</td>
-        <td class="right">${{ "%.2f"|format(r.revenue) }}</td>
-        <td class="right"><span class="{{ r.roas | float >= 4 and 'roas-good' or r.roas | float >= 2 and 'roas-ok' or 'roas-bad' }}">{{ r.roas }}x</span></td>
+        {% if c.brand_type == 'ecommerce' %}
+          <td class="right">${{ "%.2f"|format(r.revenue) }}</td>
+          <td class="right"><span class="{{ r.roas | float >= 4 and 'roas-good' or r.roas | float >= 2 and 'roas-ok' or 'roas-bad' }}">{{ r.roas }}x</span></td>
+          <td class="right">{{ r.purchases }}</td>
+          <td class="right">${{ "%.2f"|format(r.cpa) }}</td>
+        {% else %}
+          <td class="right"><strong style="color:#1a3a7a">{{ r.leads }}</strong></td>
+          <td class="right">${{ "%.2f"|format(r.cpl) }}</td>
+        {% endif %}
         <td class="right">{{ "{:,}".format(r.clicks) }}</td>
         <td class="right">{{ r.ctr }}%</td>
-        <td class="right">${{ r.cpc }}</td>
         <td class="right">{{ "{:,}".format(r.impressions) }}</td>
       </tr>
     {% else %}
-      <tr><td colspan="10" style="text-align:center;color:var(--gris);padding:24px">Aucune donnée pour cette période.</td></tr>
+      <tr><td colspan="{% if c.brand_type == 'ecommerce' %}11{% else %}9{% endif %}" style="text-align:center;color:var(--gris);padding:24px">Aucune donnée pour cette période.</td></tr>
     {% endfor %}
     </tbody>
   </table>

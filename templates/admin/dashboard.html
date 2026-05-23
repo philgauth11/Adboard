@@ -69,8 +69,8 @@ function applyCustomRange() {
 <!-- KPIs -->
 <div class="kpi-grid">
   <div class="kpi"><div class="kpi-label">Dépenses totales</div><div class="kpi-value">${{ "%.0f"|format(global_spend) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Revenus générés</div><div class="kpi-value">${{ "%.0f"|format(global_revenue) }}</div></div>
-  <div class="kpi"><div class="kpi-label">ROAS moyen</div><div class="kpi-value accent">{{ global_roas }}x</div></div>
+  <div class="kpi"><div class="kpi-label">Leads générés</div><div class="kpi-value">{{ global_leads }}</div></div>
+  <div class="kpi"><div class="kpi-label">Revenus e-com</div><div class="kpi-value" style="color:#2d9e6b">${{ "%.0f"|format(global_revenue) }}</div></div>
   <div class="kpi"><div class="kpi-label">Clics totaux</div><div class="kpi-value">{{ "{:,}".format(global_clicks) }}</div></div>
   <div class="kpi"><div class="kpi-label">Marques actives</div><div class="kpi-value">{{ active_count }}</div></div>
 </div>
@@ -83,22 +83,46 @@ function applyCustomRange() {
   </div>
   <table>
     <thead><tr>
-      <th>Marque</th><th>Plateformes</th>
-      <th class="right">Dépenses</th><th class="right">Revenus</th>
-      <th class="right">ROAS</th><th class="right">Clics</th>
+      <th>Marque</th><th>Type</th>
+      <th class="right">Dépenses</th>
+      <th class="right">Résultat</th>
+      <th class="right">Coût / résultat</th>
+      <th class="right">Clics</th>
       <th class="right">Sync</th>
     </tr></thead>
     <tbody>
     {% for row in client_data %}
       <tr onclick="window.location='/admin/marque/{{ row.client.id }}?range={{ range }}'">
-        <td style="font-weight:600">{{ row.client.name }}</td>
         <td>
-          {% if row.client.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
-          {% if row.client.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+          <div style="font-weight:600">{{ row.client.name }}</div>
+          <div style="display:flex;gap:4px;margin-top:3px">
+            {% if row.client.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
+            {% if row.client.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+          </div>
         </td>
-        <td class="right">${{ "%.0f"|format(row.spend) }}</td>
-        <td class="right">${{ "%.0f"|format(row.revenue) }}</td>
-        <td class="right"><span class="{{ row.roas_class }}">{{ row.roas }}x</span></td>
+        <td>
+          {% if row.client.brand_type == 'ecommerce' %}
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e0f0e8;color:#1a5c38">E-com</span>
+          {% else %}
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e8f0ff;color:#1a3a7a">Lead gen</span>
+          {% endif %}
+        </td>
+        <td class="right"><strong>${{ "%.0f"|format(row.spend) }}</strong></td>
+        <td class="right">
+          {% if row.primary_value > 0 %}
+            <strong>{{ row.primary_value }}</strong>
+            <span style="font-size:11px;color:var(--gris);margin-left:4px">{{ row.primary_label }}</span>
+          {% else %}
+            <span style="color:var(--gris)">—</span>
+          {% endif %}
+        </td>
+        <td class="right">
+          {% if row.cost_per_result > 0 %}
+            <span style="font-size:11px;color:var(--gris)">{{ row.cost_label }}</span> ${{ "%.2f"|format(row.cost_per_result) }}
+          {% else %}
+            <span style="color:var(--gris)">—</span>
+          {% endif %}
+        </td>
         <td class="right">{{ "{:,}".format(row.clicks) }}</td>
         <td class="right" onclick="event.stopPropagation()">
           <button id="sync-{{ row.client.id }}" onclick="syncClient({{ row.client.id }})" class="btn btn-outline" style="font-size:11px;padding:2px 8px">↻ Sync</button>

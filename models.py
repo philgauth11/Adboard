@@ -14,7 +14,7 @@ class Client(db.Model):
     secret_token = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     brand_type = db.Column(db.String(20), nullable=False, default="leadgen")  # leadgen | ecommerce
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
     metrics = db.relationship("AdMetric", backref="client", lazy="dynamic", cascade="all, delete-orphan")
     sync_logs = db.relationship("SyncLog", backref="client", lazy="dynamic", cascade="all, delete-orphan")
@@ -29,7 +29,7 @@ class TeamMember(db.Model, UserMixin):
     role = db.Column(db.String(20), nullable=False)  # admin | client
     invite_token = db.Column(db.String(36))
     invite_expires_at = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
     last_login_at = db.Column(db.DateTime)
 
     assigned_clients = db.relationship("TeamMemberClient", backref="member", lazy="dynamic", cascade="all, delete-orphan")
@@ -75,7 +75,7 @@ class AdMetric(db.Model):
     purchases = db.Column(db.Integer, default=0)  # ecommerce: achats complétés
     revenue = db.Column(db.Float, default=0.0)
     roas = db.Column(db.Float, default=0.0)
-    synced_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
+    synced_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))
 
 
 class SyncLog(db.Model):
@@ -86,4 +86,4 @@ class SyncLog(db.Model):
     status = db.Column(db.String(10), nullable=False)  # success | error
     rows_fetched = db.Column(db.Integer, default=0)
     error_message = db.Column(db.Text)
-    ran_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
+    ran_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC))

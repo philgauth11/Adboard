@@ -1,6 +1,6 @@
 import uuid
 import bcrypt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import current_user
 from models import TeamMember, Client, TeamMemberClient
@@ -44,7 +44,7 @@ def invite():
         flash("Cet email est déjà enregistré.")
         return redirect(url_for("access.index"))
     token = str(uuid.uuid4())
-    expires = datetime.utcnow() + timedelta(hours=48)
+    expires = datetime.now(UTC) + timedelta(hours=48)
     m = TeamMember(email=email, name=name, role=role, invite_token=token, invite_expires_at=expires)
     db.session.add(m)
     db.session.flush()
@@ -64,7 +64,7 @@ def invite():
 @access_bp.route("/accept/<string:token>", methods=["GET", "POST"])
 def accept_invite(token):
     m = TeamMember.query.filter_by(invite_token=token).first_or_404()
-    if m.invite_expires_at < datetime.utcnow():
+    if m.invite_expires_at < datetime.now(UTC).replace(tzinfo=None):
         flash("Ce lien d'invitation a expiré.")
         return redirect(url_for("auth.login"))
     if request.method == "POST":

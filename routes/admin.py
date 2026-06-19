@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, UTC
 from zoneinfo import ZoneInfo
 from flask import Blueprint, render_template, request, abort
 from flask_login import current_user
@@ -203,6 +203,36 @@ def dashboard():
     global_revenue = sum(x["revenue"] for x in client_data if x["client"].brand_type == "ecommerce")
     global_roas    = round(global_revenue / global_spend, 2) if global_spend else 0
 
+    # ---- Données pour les graphiques ----
+    client_ids = [c.id for c in clients]
+    chart_labels, chart_spend, chart_leads = [], [], []
+    platform_split = {}
+    if client_ids:
+        # Série temporelle (dépenses + leads par jour), respecte le filtre plateforme
+        ts_q = (db.session.query(
+                    AdMetric.date,
+                    func.sum(AdMetric.spend).label("spend"),
+                    func.sum(AdMetric.leads).label("leads"),
+                )
+                .filter(AdMetric.date >= start, AdMetric.date <= end,
+                        AdMetric.level == "campaign",
+                        AdMetric.client_id.in_(client_ids)))
+        if platform != "all":
+            ts_q = ts_q.filter(AdMetric.platform == platform)
+        for r in ts_q.group_by(AdMetric.date).order_by(AdMetric.date).all():
+            chart_labels.append(r.date.strftime("%d %b"))
+            chart_spend.append(round(float(r.spend or 0), 2))
+            chart_leads.append(int(r.leads or 0))
+
+        # Répartition du budget par plateforme (toujours toutes plateformes)
+        plat_rows = (db.session.query(
+                        AdMetric.platform, func.sum(AdMetric.spend).label("spend"))
+                     .filter(AdMetric.date >= start, AdMetric.date <= end,
+                             AdMetric.level == "campaign",
+                             AdMetric.client_id.in_(client_ids))
+                     .group_by(AdMetric.platform).all())
+        platform_split = {r.platform: round(float(r.spend or 0), 2) for r in plat_rows}
+
     return render_template("admin/dashboard.html",
         client_data=client_data, range=range_str, platform=platform,
         range_options=RANGE_OPTIONS, custom_start=custom_start, custom_end=custom_end,
@@ -210,6 +240,56 @@ def dashboard():
         global_leads=global_leads, global_revenue=global_revenue,
         global_roas=global_roas,
         active_count=len(clients),
+        chart_labels=chart_labels, chart_spend=chart_spend, chart_leads=chart_leads,
+        platform_split=platform_split,
+    )
+
+
+@admin_bp.route("/activity")
+@require_role("admin")
+def activity():
+    now = datetime.now(UTC).replace(tzinfo=None)
+    cutoff_30 = now - timedelta(days=30)
+    cutoff_7 = now - timedelta(days=7)
+
+    success_count = SyncLog.query.filter(SyncLog.status == "success", SyncLog.ran_at >= cutoff_30).count()
+    fail_count = SyncLog.query.filter(SyncLog.status == "error", SyncLog.ran_at >= cutoff_30).count()
+    total_count = success_count + fail_count
+    fail_rate = round(fail_count / total_count * 100, 1) if total_count else 0
+
+    # Volume par jour (7 derniers jours)
+    vol_rows = (db.session.query(func.date(SyncLog.ran_at).label("d"), func.count().label("n"))
+                .filter(SyncLog.ran_at >= cutoff_7)
+                .group_by("d").order_by("d").all())
+    vol_labels = [str(r.d) for r in vol_rows]
+    vol_data = [int(r.n) for r in vol_rows]
+
+    # État des sources : dernier statut de sync par marque active
+    latest = {}
+    for s in SyncLog.query.order_by(SyncLog.ran_at.desc()).all():
+        latest.setdefault(s.client_id, s.status)
+    active_clients = Client.query.filter_by(is_active=True).all()
+    health_ok = sum(1 for c in active_clients if latest.get(c.id) == "success")
+    health_fail = sum(1 for c in active_clients if latest.get(c.id) == "error")
+    health_never = sum(1 for c in active_clients if c.id not in latest)
+
+    events = SyncLog.query.order_by(SyncLog.ran_at.desc()).limit(40).all()
+
+    return render_template("admin/activity.html",
+        success_count=success_count, fail_count=fail_count,
+        total_count=total_count, fail_rate=fail_rate,
+        vol_labels=vol_labels, vol_data=vol_data,
+        health_ok=health_ok, health_fail=health_fail, health_never=health_never,
+        events=events, active_total=len(active_clients),
+    )
+
+
+@admin_bp.route("/settings")
+@require_role("admin")
+def settings():
+    return render_template("admin/settings.html",
+        agency_name="Tête à Papineau",
+        timezone_label="(UTC−05:00) Montréal",
     )
 
 

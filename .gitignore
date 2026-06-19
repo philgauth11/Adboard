@@ -5,3 +5,5 @@ instance/
 .superpowers/
 *.db
 *.sqlite3
+venv/
+.venv/

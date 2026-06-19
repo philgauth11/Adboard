@@ -1,0 +1,33 @@
+/* LUIJO — glue spécifique à l'app Flask (non couvert par luijo-app.css) */
+
+/* Messages flash */
+.lj-flash {
+  background: color-mix(in srgb, #b3261e 9%, var(--bg-surface));
+  border: 1px solid color-mix(in srgb, #b3261e 28%, transparent);
+  color: #92281b;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-size: 13.5px;
+}
+
+/* Écran d'authentification (login, invitation, mot de passe) — pas de coquille latérale */
+.lj-authshell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: var(--bg-canvas);
+  padding: 40px 20px;
+}
+.lj-authcard {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  box-shadow: 0 18px 50px -28px rgba(96,14,24,0.35);
+}
+
+/* Liens de navigation latérale (les items sont des <a>, pas des <div>) */
+a.lj-nav__item { text-decoration: none; }

@@ -7,7 +7,7 @@ Create Date: 2026-04-23 23:00:35.039300
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import text
+from sqlalchemy import inspect
 
 
 revision = 'd0620082110b'
@@ -17,12 +17,10 @@ depends_on = None
 
 
 def _column_exists(table, column):
+    # inspect() fonctionne sur SQLite et PostgreSQL (contrairement à information_schema)
     conn = op.get_bind()
-    result = conn.execute(text(
-        "SELECT 1 FROM information_schema.columns "
-        "WHERE table_name=:t AND column_name=:c"
-    ), {"t": table, "c": column})
-    return result.fetchone() is not None
+    columns = [c['name'] for c in inspect(conn).get_columns(table)]
+    return column in columns
 
 
 def upgrade():

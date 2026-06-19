@@ -1,0 +1,197 @@
+/* =========================================================
+   Luijo — Colors & Type
+   Single source of truth for design tokens.
+   ========================================================= */
+
+/* Google Fonts: Manrope (display), Inter (body) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
+
+:root {
+  /* ---------- Brand palette ---------- */
+  --luijo-burgundy:   #600e18; /* primary brand */
+  --luijo-burgundy-2: #4a0a12; /* pressed / deepest */
+  --luijo-burgundy-3: #7a1d28; /* hover lift */
+  --luijo-orange:     #fe6b25; /* accent / CTA */
+  --luijo-orange-2:   #e85811; /* pressed */
+  --luijo-orange-3:   #ff8951; /* hover */
+  --luijo-sand:       #ecd9c0; /* warm tertiary, surfaces */
+  --luijo-sand-2:     #d9c2a3; /* sand pressed */
+  --luijo-cream:      #fdf5ee; /* canvas background */
+  --luijo-cream-2:    #f7ebdb; /* raised on cream */
+
+  /* ---------- Neutral scale (warm-leaning) ---------- */
+  --neutral-0:  #ffffff;
+  --neutral-50: #fdf5ee;
+  --neutral-100:#f5ecdf;
+  --neutral-200:#e7dac6;
+  --neutral-300:#cdbda4;
+  --neutral-400:#a89880;
+  --neutral-500:#7a6c58;
+  --neutral-600:#544838;
+  --neutral-700:#3a3025;
+  --neutral-800:#241c15;
+  --neutral-900:#150f0a;
+
+  /* ---------- Semantic foreground ---------- */
+  --fg-1: var(--neutral-800);   /* primary text on cream */
+  --fg-2: var(--neutral-600);   /* secondary text */
+  --fg-3: var(--neutral-500);   /* tertiary / captions */
+  --fg-inverse: var(--luijo-cream);
+  --fg-brand: var(--luijo-burgundy);
+  --fg-accent: var(--luijo-orange);
+  --fg-on-burgundy: var(--luijo-cream);
+  --fg-on-orange:   #2a0f00;
+
+  /* ---------- Semantic background ---------- */
+  --bg-canvas:   var(--luijo-cream);     /* page */
+  --bg-surface:  var(--neutral-0);       /* cards on cream */
+  --bg-raised:   var(--luijo-cream-2);   /* subtly raised on canvas */
+  --bg-sunken:   var(--luijo-sand);      /* warm panel */
+  --bg-brand:    var(--luijo-burgundy);
+  --bg-accent:   var(--luijo-orange);
+  --bg-inverse:  var(--neutral-900);
+
+  /* ---------- Semantic feedback ---------- */
+  --success:  #2f7d4f;
+  --warning:  #c97a14;
+  --danger:   #b3261e;
+  --info:     #1f6f8b;
+
+  /* ---------- Borders ---------- */
+  --border-soft:   color-mix(in srgb, var(--luijo-burgundy) 10%, transparent);
+  --border-medium: color-mix(in srgb, var(--luijo-burgundy) 18%, transparent);
+  --border-strong: color-mix(in srgb, var(--luijo-burgundy) 35%, transparent);
+  --border-brand:  var(--luijo-burgundy);
+
+  /* ---------- Radii ---------- */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* ---------- Spacing scale (4px base) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  /* ---------- Shadows (warm, low-tinted) ---------- */
+  --shadow-xs: 0 1px 0 0 color-mix(in srgb, var(--luijo-burgundy) 8%, transparent);
+  --shadow-sm: 0 1px 2px 0 color-mix(in srgb, var(--luijo-burgundy) 10%, transparent),
+               0 1px 1px -1px color-mix(in srgb, var(--luijo-burgundy) 8%, transparent);
+  --shadow-md: 0 6px 14px -6px color-mix(in srgb, var(--luijo-burgundy) 18%, transparent),
+               0 2px 4px -2px color-mix(in srgb, var(--luijo-burgundy) 10%, transparent);
+  --shadow-lg: 0 18px 36px -12px color-mix(in srgb, var(--luijo-burgundy) 22%, transparent),
+               0 6px 10px -6px color-mix(in srgb, var(--luijo-burgundy) 12%, transparent);
+  --shadow-inset: inset 0 1px 0 0 color-mix(in srgb, #fff 50%, transparent);
+
+  /* ---------- Type tokens ---------- */
+  --font-display: "Manrope", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --font-body:    "Inter",   ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* fluid sizes — clamp(min, vw-based, max) */
+  --fs-display:  clamp(48px, 6.4vw, 88px);
+  --fs-h1:       clamp(36px, 4.4vw, 56px);
+  --fs-h2:       clamp(28px, 3.0vw, 40px);
+  --fs-h3:       22px;
+  --fs-h4:       18px;
+  --fs-body:     16px;
+  --fs-body-sm:  14px;
+  --fs-caption:  12px;
+  --fs-eyebrow:  12px;
+
+  --lh-tight:   1.05;
+  --lh-snug:    1.2;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.65;
+
+  --tracking-display: -0.02em;
+  --tracking-heading: -0.015em;
+  --tracking-body:    0;
+  --tracking-eyebrow: 0.14em;
+
+  /* ---------- Motion ---------- */
+  --ease-out:   cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out:cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast:   120ms;
+  --dur-base:   200ms;
+  --dur-slow:   320ms;
+}
+
+/* =========================================================
+   Base / element styles
+   ========================================================= */
+
+html, body {
+  background: var(--bg-canvas);
+  color: var(--fg-1);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  letter-spacing: var(--tracking-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: var(--font-display);
+  color: var(--fg-1);
+  letter-spacing: var(--tracking-heading);
+  margin: 0;
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--fs-h1); font-weight: 700; line-height: var(--lh-tight);  letter-spacing: var(--tracking-display); }
+h2 { font-size: var(--fs-h2); font-weight: 700; line-height: var(--lh-snug); }
+h3 { font-size: var(--fs-h3); font-weight: 600; line-height: var(--lh-snug); }
+h4 { font-size: var(--fs-h4); font-weight: 600; line-height: var(--lh-snug); }
+
+p  { margin: 0; line-height: var(--lh-relaxed); text-wrap: pretty; }
+
+small, .caption {
+  font-size: var(--fs-caption);
+  color: var(--fg-3);
+  letter-spacing: 0.01em;
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  font-size: var(--fs-eyebrow);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-brand);
+}
+
+.display {
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 800;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+code, pre, kbd, samp {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+::selection { background: var(--luijo-orange); color: var(--fg-on-orange); }
+
+a {
+  color: var(--fg-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--luijo-burgundy) 35%, transparent);
+  transition: color var(--dur-fast) var(--ease-out), text-decoration-color var(--dur-fast);
+}
+a:hover { color: var(--luijo-orange); text-decoration-color: var(--luijo-orange); }

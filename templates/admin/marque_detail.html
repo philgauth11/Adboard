@@ -1,221 +1,200 @@
 {% extends "base.html" %}
 {% block title %}{{ c.name }}{% endblock %}
+
+{% block crumbs %}<a href="{{ url_for('admin.dashboard') }}" style="color:var(--fg-3);text-decoration:none">Marques</a>{% include "partials/icons/chevron.html" %}<strong>{{ c.name }}</strong>{% endblock %}
+
+{% block topbar_actions %}
+  {% if c.meta_account_id %}<a class="lj-btn lj-btn--ghost lj-btn--sm" href="https://adsmanager.facebook.com/adsmanager/manage/campaigns?act={{ c.meta_account_id|replace('act_','') }}" target="_blank" rel="noopener">{% include "partials/icons/external.html" %} Ouvrir dans Meta</a>{% endif %}
+{% endblock %}
+
 {% block content %}
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-  <a href="{{ url_for('admin.dashboard') }}" style="color:var(--gris);font-size:12px">← Retour</a>
-  <h1 style="font-size:18px;font-weight:700">{{ c.name }}</h1>
-  {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
-  {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
-  <div style="margin-left:auto">
-    <button id="sync-btn" onclick="syncNow()" class="btn btn-outline">↻ Sync maintenant</button>
+{% set total_imp = rows | sum(attribute='impressions') %}
+{% set avg_ctr = (clicks / total_imp * 100) if total_imp else 0 %}
+{% set base_q = '?range=' + range + ('&start=' + custom_start + '&end=' + custom_end if range == 'custom' else '') %}
+
+<!-- ===== Bandeau de marque ===== -->
+<section class="lj-brandhead">
+  <div class="lj-brandhead__av lj-av--orange">{{ c.name[:2]|upper }}</div>
+  <div class="lj-brandhead__main">
+    <div class="lj-brandhead__eyebrow">Marque · {{ 'E-commerce' if c.brand_type == 'ecommerce' else 'Génération de leads' }}</div>
+    <div class="lj-brandhead__name">{{ c.name }}</div>
+    <div class="lj-brandhead__meta">
+      {% if spend > 0 %}<div style="display:flex;align-items:center;gap:6px"><span class="lj-dot lj-dot--ok"></span> Diffusion active</div>
+      {% else %}<div style="display:flex;align-items:center;gap:6px"><span class="lj-dot lj-dot--off"></span> En pause</div>{% endif %}
+      <span style="color:rgba(253,245,238,.3)">·</span>
+      <div><strong>{{ [c.meta_account_id, c.google_customer_id]|select|list|length }}</strong> plateforme(s) connectée(s)</div>
+      <span style="color:rgba(253,245,238,.3)">·</span>
+      {% if sync_history %}<div>Dernière synchro · <strong>{{ sync_history[0].ran_at | localtime }}</strong></div>
+      {% else %}<div>Jamais synchronisée</div>{% endif %}
+    </div>
   </div>
+  <div class="lj-brandhead__actions">
+    <button id="sync-btn" class="lj-btn lj-btn--ghost" onclick="syncNow()">{% include "partials/icons/refresh.html" %} Synchroniser</button>
+  </div>
+</section>
+
+<!-- ===== Onglets (niveaux) ===== -->
+<div class="lj-tabs">
+  <a href="{{ base_q }}&view=campaign" class="{% if view == 'campaign' %}is-active{% endif %}" style="text-decoration:none">Campagnes</a>
+  <a href="{{ base_q }}&view=adset" class="{% if view == 'adset' %}is-active{% endif %}" style="text-decoration:none">Groupes d'annonces</a>
+  <a href="{{ base_q }}&view=ad" class="{% if view == 'ad' %}is-active{% endif %}" style="text-decoration:none">Publicités</a>
+</div>
+
+<!-- ===== Filtre période ===== -->
+<div class="lj-filters">
+  <div class="lj-filters__group">
+    <span class="lj-filters__label">Période</span>
+    <div class="lj-segctl">
+      {% for val, label in range_options if val != 'custom' %}
+        <button class="{% if range == val %}is-active{% endif %}" onclick="location='?range={{ val }}&view={{ view }}'">{{ label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ===== Stats (adaptées au type de marque) ===== -->
+<div class="lj-grid lj-grid--cols-6" style="margin-bottom:22px">
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Dépenses</div><div class="lj-stat__val">${{ "%.0f"|format(spend) }}</div></div></div>
+  {% if c.brand_type == 'ecommerce' %}
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Revenus</div><div class="lj-stat__val">${{ "%.0f"|format(revenue) }}</div></div></div>
+  <div class="lj-card lj-card--burgundy" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">ROAS</div><div class="lj-stat__val">{{ roas }}×</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Achats</div><div class="lj-stat__val">{{ purchases }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">CPA</div><div class="lj-stat__val">${{ "%.2f"|format(cpa) }}</div></div></div>
+  {% else %}
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Leads</div><div class="lj-stat__val">{{ leads }}</div></div></div>
+  <div class="lj-card lj-card--burgundy" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Coût / lead</div><div class="lj-stat__val">${{ "%.2f"|format(cpl) }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Clics</div><div class="lj-stat__val">{{ "{:,}".format(clicks) }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">CTR moyen</div><div class="lj-stat__val">{{ "%.2f"|format(avg_ctr) }} %</div></div></div>
+  {% endif %}
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Impressions</div><div class="lj-stat__val">{{ "{:,}".format(total_imp) }}</div></div></div>
+</div>
+
+<!-- ===== Graphique ===== -->
+<div class="lj-card" style="margin-bottom:22px">
+  <div class="lj-chart__head">
+    <div>
+      <div class="lj-chart__title">Dépenses par jour</div>
+      <div class="lj-chart__sub">Sur la période · par plateforme</div>
+    </div>
+  </div>
+  <div class="lj-chart lj-chart--lg"><canvas id="spendChart"></canvas></div>
+</div>
+
+<!-- ===== Tableau de données ===== -->
+<div class="lj-card lj-card--flush">
+  <div style="padding:18px 22px 14px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border-soft)">
+    <h3 style="font:700 16px var(--font-display);color:var(--fg-1)">
+      {% if view == 'campaign' %}Campagnes{% elif view == 'adset' %}Groupes d'annonces{% else %}Publicités{% endif %}
+    </h3>
+    <span class="lj-badge lj-badge--soft">{{ rows | length }} au total</span>
+  </div>
+  <table class="lj-table">
+    <thead>
+      <tr>
+        {% if view == 'ad' %}<th>Publicité</th><th>Groupe</th><th>Campagne</th>
+        {% elif view == 'adset' %}<th>Groupe d'annonces</th><th>Campagne</th>
+        {% else %}<th>Campagne</th>{% endif %}
+        <th>Plateforme</th>
+        <th class="num">Dépenses</th>
+        {% if c.brand_type == 'ecommerce' %}<th class="num">Revenus</th><th class="num">ROAS</th><th class="num">Achats</th><th class="num">CPA</th>
+        {% else %}<th class="num">Leads</th><th class="num">CPL</th>{% endif %}
+        <th class="num">Clics</th>
+        <th class="num">CTR</th>
+        <th class="num">Impressions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in rows %}
+      <tr>
+        {% if view == 'ad' %}
+          <td><span class="lj-table__brandname">{{ r.ad_name }}</span></td>
+          <td style="font-size:11px;color:var(--fg-3)">{{ r.adset_name }}</td>
+          <td style="font-size:11px;color:var(--fg-3)">{{ r.campaign_name }}</td>
+        {% elif view == 'adset' %}
+          <td><span class="lj-table__brandname">{{ r.adset_name }}</span></td>
+          <td style="font-size:11px;color:var(--fg-3)">{{ r.campaign_name }}</td>
+        {% else %}
+          <td><span class="lj-table__brandname">{{ r.campaign_name }}</span></td>
+        {% endif %}
+        <td><span class="lj-badge lj-badge--soft">{{ r.platform|capitalize }}</span></td>
+        <td class="num"><strong>${{ "%.0f"|format(r.spend) }}</strong></td>
+        {% if c.brand_type == 'ecommerce' %}
+          <td class="num">${{ "%.0f"|format(r.revenue) }}</td>
+          <td class="num"><span class="lj-badge {{ 'lj-badge--ok' if r.roas >= 2 else 'lj-badge--off' }}">{{ r.roas }}×</span></td>
+          <td class="num">{{ r.purchases }}</td>
+          <td class="num">${{ "%.2f"|format(r.cpa) }}</td>
+        {% else %}
+          <td class="num"><strong>{{ r.leads }}</strong></td>
+          <td class="num">${{ "%.2f"|format(r.cpl) }}</td>
+        {% endif %}
+        <td class="num">{{ "{:,}".format(r.clicks) }}</td>
+        <td class="num">{{ r.ctr }} %</td>
+        <td class="num">{{ "{:,}".format(r.impressions) }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="11" style="text-align:center;color:var(--fg-3);padding:28px">Aucune donnée pour cette période.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ===== Historique des syncs ===== -->
+<div class="lj-card lj-card--flush" style="margin-top:22px">
+  <div style="padding:18px 22px 14px;border-bottom:1px solid var(--border-soft)">
+    <h3 style="font:700 16px var(--font-display);color:var(--fg-1)">Historique des synchronisations</h3>
+  </div>
+  <table class="lj-table">
+    <thead><tr><th>Date</th><th>Plateforme</th><th>Statut</th><th class="num">Lignes</th><th>Erreur</th></tr></thead>
+    <tbody>
+    {% for s in sync_history %}
+      <tr>
+        <td>{{ s.ran_at | localtime }}</td>
+        <td><span class="lj-badge lj-badge--soft">{{ s.platform|capitalize }}</span></td>
+        <td>{% if s.status == 'success' %}<span class="lj-badge lj-badge--ok lj-badge--dot">Réussie</span>{% else %}<span class="lj-badge lj-badge--dot" style="background:color-mix(in srgb,#b3261e 12%,transparent);color:#92281b">Échec</span>{% endif %}</td>
+        <td class="num">{{ s.rows_fetched or 0 }}</td>
+        <td style="font-size:11px;color:var(--fg-3);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.error_message or '—' }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="5" style="text-align:center;color:var(--fg-3);padding:24px">Aucune synchronisation enregistrée.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <script>
 function syncNow() {
   const btn = document.getElementById("sync-btn");
-  btn.textContent = "Sync en cours...";
-  btn.disabled = true;
+  btn.innerHTML = "Sync en cours…"; btn.disabled = true;
   fetch("/api/sync/{{ c.id }}", { method: "POST" })
     .then(r => r.json())
     .then(data => {
-      if (data.status === "error") {
-        btn.textContent = "⚠ " + data.errors[0];
-        btn.style.color = "#E95526";
-        btn.disabled = false;
-      } else {
-        btn.textContent = "✓ Sync terminée — recharge la page";
-        btn.style.color = "#2d9e6b";
-        btn.style.borderColor = "#2d9e6b";
-      }
+      if (data.status === "error") { btn.innerHTML = "⚠ " + data.errors[0]; btn.disabled = false; }
+      else { btn.innerHTML = "✓ Terminé"; setTimeout(() => location.reload(), 900); }
     })
-    .catch(() => {
-      btn.textContent = "Erreur réseau — réessaie";
-      btn.disabled = false;
+    .catch(() => { btn.innerHTML = "Erreur réseau"; btn.disabled = false; });
+}
+fetch("/api/marque/{{ c.id }}/chart?range={{ range }}")
+  .then(r => r.json())
+  .then(data => {
+    new Chart(document.getElementById("spendChart"), {
+      type: "bar",
+      data: {
+        labels: data.labels,
+        datasets: [
+          { label: "Meta",   data: data.meta,   backgroundColor: "#600e18", borderRadius: 6, borderSkipped: false },
+          { label: "Google", data: data.google, backgroundColor: "#fe6b25", borderRadius: 6, borderSkipped: false },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: "top", align: "end", labels: { boxWidth: 8, boxHeight: 8, font: { family: "Inter", size: 11 } } },
+          tooltip: { backgroundColor: "#600e18", padding: 10, cornerRadius: 8 } },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { color: "#7a6c58", font: { size: 10.5 }, maxTicksLimit: 8 } },
+          y: { stacked: true, grid: { color: "rgba(96,14,24,0.07)" }, ticks: { color: "#7a6c58", font: { size: 10.5 } } }
+        }
+      }
     });
-}
-</script>
-
-<!-- Period filter -->
-<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">
-  <select id="range-select" onchange="onRangeChange(this.value)"
-          style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;background:white;color:var(--brun);cursor:pointer">
-    {% for val, label in range_options %}
-      <option value="{{ val }}" {% if range==val %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-  </select>
-</div>
-<div id="custom-dates" style="display:{% if range=='custom' %}flex{% else %}none{% endif %};align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <span style="font-size:11px;color:var(--gris)">Du</span>
-  <input type="date" id="start-date" value="{{ custom_start }}"
-         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
-  <span style="font-size:11px;color:var(--gris)">au</span>
-  <input type="date" id="end-date" value="{{ custom_end }}"
-         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
-  <button onclick="applyCustomRange()" class="btn btn-outline" style="font-size:13px;padding:4px 14px">Appliquer</button>
-</div>
-<div style="margin-bottom:20px"></div>
-<script>
-function onRangeChange(val) {
-  if (val === 'custom') {
-    document.getElementById('custom-dates').style.display = 'flex';
-  } else {
-    window.location = '?range=' + val;
-  }
-}
-function applyCustomRange() {
-  const start = document.getElementById('start-date').value;
-  const end   = document.getElementById('end-date').value;
-  if (start && end) {
-    window.location = '?range=custom&start=' + start + '&end=' + end;
-  }
-}
-</script>
-
-<!-- KPIs -->
-{% if c.brand_type == 'ecommerce' %}
-<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
-  <div class="kpi"><div class="kpi-label">Budget dépensé</div><div class="kpi-value">${{ "%.2f"|format(spend) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Revenus</div><div class="kpi-value" style="color:#2d9e6b">${{ "%.2f"|format(revenue) }}</div></div>
-  <div class="kpi"><div class="kpi-label">ROAS</div><div class="kpi-value accent">{{ roas }}x</div></div>
-  <div class="kpi"><div class="kpi-label">Achats</div><div class="kpi-value">{{ purchases }}</div></div>
-  <div class="kpi"><div class="kpi-label">CPA</div><div class="kpi-value">${{ "%.2f"|format(cpa) }}</div></div>
-</div>
-{% else %}
-<div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
-  <div class="kpi"><div class="kpi-label">Budget dépensé</div><div class="kpi-value">${{ "%.2f"|format(spend) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Leads</div><div class="kpi-value" style="color:#1a3a7a">{{ leads }}</div></div>
-  <div class="kpi"><div class="kpi-label">Coût / lead</div><div class="kpi-value accent">${{ "%.2f"|format(cpl) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Clics</div><div class="kpi-value">{{ "{:,}".format(clicks) }}</div></div>
-  <div class="kpi"><div class="kpi-label">CTR moyen</div>
-    <div class="kpi-value">
-      {% set total_imp = rows | sum(attribute='impressions') %}
-      {% if total_imp > 0 %}{{ "%.2f"|format(clicks / total_imp * 100) }} %{% else %}—{% endif %}
-    </div>
-  </div>
-</div>
-{% endif %}
-
-<!-- Chart -->
-<div class="card" style="margin-bottom:16px">
-  <div class="card-header"><span class="card-title">Dépenses par jour</span></div>
-  <div style="padding:16px;height:200px">
-    <canvas id="spendChart"></canvas>
-  </div>
-</div>
-
-<!-- View toggle -->
-{% set base_q = '?range=' + range + ('&start=' + custom_start + '&end=' + custom_end if range == 'custom' else '') %}
-<div style="display:flex;gap:8px;margin-bottom:16px">
-  <a href="{{ base_q }}&view=campaign" class="pill {% if view=='campaign' %}active{% endif %}">Campagnes</a>
-  <a href="{{ base_q }}&view=adset"    class="pill {% if view=='adset'    %}active{% endif %}">Groupes d'annonces</a>
-  <a href="{{ base_q }}&view=ad"       class="pill {% if view=='ad'       %}active{% endif %}">Publicités</a>
-</div>
-
-<!-- Data table -->
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">
-      {% if view == 'campaign' %}Campagnes
-      {% elif view == 'adset' %}Groupes d'annonces
-      {% else %}Publicités{% endif %}
-    </span>
-  </div>
-  <table>
-    <thead><tr>
-      {% if view == 'ad' %}
-        <th>Publicité</th><th>Groupe d'annonces</th><th>Campagne</th>
-      {% elif view == 'adset' %}
-        <th>Groupe d'annonces</th><th>Campagne</th>
-      {% else %}
-        <th>Campagne</th>
-      {% endif %}
-      <th></th>
-      <th class="right">Dépenses</th>
-      {% if c.brand_type == 'ecommerce' %}
-        <th class="right">Revenus</th>
-        <th class="right">ROAS</th>
-        <th class="right">Achats</th>
-        <th class="right">CPA</th>
-      {% else %}
-        <th class="right">Leads</th>
-        <th class="right">CPL</th>
-      {% endif %}
-      <th class="right">Clics</th>
-      <th class="right">CTR</th>
-      <th class="right">Impressions</th>
-    </tr></thead>
-    <tbody>
-    {% for r in rows %}
-      <tr>
-        {% if view == 'ad' %}
-          <td style="font-weight:600">{{ r.ad_name }}</td>
-          <td style="font-size:11px;color:var(--gris)">{{ r.adset_name }}</td>
-          <td style="font-size:11px;color:var(--gris)">{{ r.campaign_name }}</td>
-        {% elif view == 'adset' %}
-          <td style="font-weight:600">{{ r.adset_name }}</td>
-          <td style="font-size:11px;color:var(--gris)">{{ r.campaign_name }}</td>
-        {% else %}
-          <td style="font-weight:600">{{ r.campaign_name }}</td>
-        {% endif %}
-        <td><span class="tag-{{ r.platform }}">{{ r.platform|capitalize }}</span></td>
-        <td class="right">${{ "%.2f"|format(r.spend) }}</td>
-        {% if c.brand_type == 'ecommerce' %}
-          <td class="right">${{ "%.2f"|format(r.revenue) }}</td>
-          <td class="right"><span class="{{ r.roas | float >= 4 and 'roas-good' or r.roas | float >= 2 and 'roas-ok' or 'roas-bad' }}">{{ r.roas }}x</span></td>
-          <td class="right">{{ r.purchases }}</td>
-          <td class="right">${{ "%.2f"|format(r.cpa) }}</td>
-        {% else %}
-          <td class="right"><strong style="color:#1a3a7a">{{ r.leads }}</strong></td>
-          <td class="right">${{ "%.2f"|format(r.cpl) }}</td>
-        {% endif %}
-        <td class="right">{{ "{:,}".format(r.clicks) }}</td>
-        <td class="right">{{ r.ctr }}%</td>
-        <td class="right">{{ "{:,}".format(r.impressions) }}</td>
-      </tr>
-    {% else %}
-      <tr><td colspan="{% if c.brand_type == 'ecommerce' %}11{% else %}9{% endif %}" style="text-align:center;color:var(--gris);padding:24px">Aucune donnée pour cette période.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<!-- Sync logs -->
-<div class="card" style="margin-top:16px">
-  <div class="card-header"><span class="card-title">Historique des syncs</span></div>
-  <table>
-    <thead><tr><th>Date</th><th>Plateforme</th><th>Statut</th><th>Lignes</th><th>Erreur</th></tr></thead>
-    <tbody>
-    {% for s in sync_history %}
-      <tr>
-        <td style="font-size:12px">{{ s.ran_at | localtime }}</td>
-        <td><span class="tag-{{ s.platform }}">{{ s.platform }}</span></td>
-        <td><span class="{{ 'sync-ok' if s.status == 'success' else 'sync-err' }}">{{ s.status }}</span></td>
-        <td class="right">{{ s.rows_fetched or 0 }}</td>
-        <td style="font-size:11px;color:var(--gris);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.error_message or '' }}</td>
-      </tr>
-    {% else %}
-      <tr><td colspan="5" style="text-align:center;color:var(--gris);padding:16px">Aucune sync enregistrée.</td></tr>
-    {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<script>
-  fetch("/api/marque/{{ c.id }}/chart?range={{ range }}")
-    .then(r => r.json())
-    .then(data => {
-      new Chart(document.getElementById("spendChart"), {
-        type: "bar",
-        data: {
-          labels: data.labels,
-          datasets: [
-            { label: "Meta", data: data.meta, backgroundColor: "#E95526" },
-            { label: "Google", data: data.google, backgroundColor: "#4285F4" },
-          ]
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } } }
-      });
-    });
+  });
 </script>
 {% endblock %}

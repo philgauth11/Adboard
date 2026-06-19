@@ -1,39 +1,94 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-density="comfortable">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}AdBoard{% endblock %} — Tête à Papineau</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/tap.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/luijo-tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/luijo-app.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/luijo-extra.css') }}">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <nav class="nav">
-    <div>
-      <div class="nav-brand-name">Tête à Papineau</div>
-      <div class="nav-brand-sub">AdBoard</div>
-    </div>
-    {% if current_user.is_authenticated %}
-      <a class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}" href="{{ url_for('admin.dashboard') }}">Vue globale</a>
-      {% if current_user.role == 'admin' %}
-      <a class="nav-link {% if request.blueprint == 'access' %}active{% endif %}" href="{{ url_for('access.index') }}">Accès</a>
-      {% endif %}
-    {% endif %}
-    <div class="nav-right">
-      {% block nav_right %}
-        {% if current_user.is_authenticated %}
-          <a href="{{ url_for('auth.change_password') }}" style="font-size:11px;color:var(--beige);opacity:.7;text-decoration:none;">{{ current_user.name }}</a>
-          <a href="{{ url_for('auth.logout') }}" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">Déconnexion</a>
+{% if current_user.is_authenticated %}
+  <div class="lj-app">
+    {# ---------------- Sidebar ---------------- #}
+    <aside class="lj-side">
+      <div class="lj-brand">
+        {% include "partials/luijo_tile.html" %}
+        <div>
+          <span class="lj-wordmark" style="font:800 22px/1 var(--font-display);letter-spacing:-.02em;color:#fdf5ee;display:inline-flex;align-items:baseline">LU<span style="position:relative;display:inline-block">ı<span style="position:absolute;top:-1.5px;left:50%;transform:translateX(-50%);width:5px;height:5px;background:var(--luijo-orange);border-radius:1px"></span></span>JO</span>
+          <div class="lj-brand__sub">par Tête à Papineau</div>
+        </div>
+      </div>
+
+      <nav class="lj-nav">
+        <a class="lj-nav__item {% if request.endpoint == 'admin.dashboard' %}lj-nav__item--active{% endif %}" href="{{ url_for('admin.dashboard') }}">
+          {% include "partials/icons/grid.html" %}<span>Vue globale</span>
+        </a>
+        {% if current_user.role == 'admin' %}
+        <a class="lj-nav__item {% if request.blueprint == 'access' %}lj-nav__item--active{% endif %}" href="{{ url_for('access.index') }}">
+          {% include "partials/icons/tag.html" %}<span>Marques</span>
+        </a>
+        <a class="lj-nav__item" href="#">
+          {% include "partials/icons/plug.html" %}<span>Connexions</span>
+        </a>
+        <a class="lj-nav__item" href="#">
+          {% include "partials/icons/doc.html" %}<span>Rapports</span>
+        </a>
+        <a class="lj-nav__item {% if request.blueprint == 'access' %}lj-nav__item--active{% endif %}" href="{{ url_for('access.index') }}">
+          {% include "partials/icons/users.html" %}<span>Utilisateurs</span>
+        </a>
+        <div class="lj-nav__group">
+          <div class="lj-nav__label">Atelier</div>
+          <a class="lj-nav__item {% if request.endpoint == 'admin.activity' %}lj-nav__item--active{% endif %}" href="{{ url_for('admin.activity') }}">{% include "partials/icons/activity.html" %}<span>Activité &amp; syncs</span></a>
+          <a class="lj-nav__item {% if request.endpoint == 'admin.settings' %}lj-nav__item--active{% endif %}" href="{{ url_for('admin.settings') }}">{% include "partials/icons/settings.html" %}<span>Paramètres</span></a>
+        </div>
         {% endif %}
-      {% endblock %}
-    </div>
-  </nav>
-  <div class="main">
-    {% for msg in get_flashed_messages() %}
-      <div class="flash-error">{{ msg }}</div>
-    {% endfor %}
-    {% block content %}{% endblock %}
+      </nav>
+
+      <div class="lj-side__foot">
+        <div class="lj-userchip">
+          <div class="lj-userchip__av">{{ current_user.name[:2]|upper }}</div>
+          <div style="flex:1;min-width:0">
+            <div class="lj-userchip__name">{{ current_user.name }}</div>
+            <div class="lj-userchip__role">{{ 'Super admin' if current_user.role == 'admin' else 'Client' }}</div>
+          </div>
+          <a href="{{ url_for('auth.logout') }}" title="Déconnexion" style="color:inherit;opacity:.6;display:flex">{% include "partials/icons/logout.html" %}</a>
+        </div>
+      </div>
+    </aside>
+
+    {# ---------------- Main ---------------- #}
+    <main class="lj-main">
+      <header class="lj-topbar">
+        <div class="lj-topbar__crumbs">{% block crumbs %}<strong>AdBoard</strong>{% endblock %}</div>
+        <div class="lj-topbar__search">
+          {% include "partials/icons/search.html" %}
+          <span>Rechercher une marque, une campagne…</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--fg-3);border:1px solid var(--border-soft);padding:1px 6px;border-radius:4px">⌘K</span>
+        </div>
+        <div class="lj-topbar__actions">
+          {% block topbar_actions %}{% endblock %}
+        </div>
+      </header>
+
+      <div class="lj-page">
+        {% for msg in get_flashed_messages() %}
+          <div class="lj-flash">{{ msg }}</div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+      </div>
+    </main>
   </div>
+{% else %}
+  <div class="lj-authshell">
+    {% for msg in get_flashed_messages() %}
+      <div class="lj-flash">{{ msg }}</div>
+    {% endfor %}
+    {{ self.content() }}
+  </div>
+{% endif %}
 </body>
 </html>

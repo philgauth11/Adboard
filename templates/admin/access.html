@@ -1,187 +1,180 @@
 {% extends "base.html" %}
-{% block title %}Accès{% endblock %}
+{% block title %}Marques & utilisateurs{% endblock %}
+
+{% block crumbs %}<span>AdBoard</span>{% include "partials/icons/chevron.html" %}<strong>Marques &amp; utilisateurs</strong>{% endblock %}
+
 {% block content %}
 
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-  <h1 style="font-size:18px;font-weight:700">Gestion des accès</h1>
-</div>
-
-<!-- Section Marques -->
-<div class="card" style="margin-bottom:20px">
-  <div class="card-header">
-    <span class="card-title">Marques ({{ clients|length }})</span>
-    <button onclick="document.getElementById('brand-form').style.display='block'" class="btn btn-primary">+ Ajouter une marque</button>
+<!-- ============ Section Marques ============ -->
+<div class="lj-card lj-card--flush" style="margin-bottom:22px">
+  <div style="padding:18px 22px 14px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border-soft)">
+    <h3 style="font:700 16px var(--font-display);color:var(--fg-1)">Marques</h3>
+    <span class="lj-badge lj-badge--soft">{{ clients|length }}</span>
+    <button class="lj-btn lj-btn--accent lj-btn--sm" style="margin-left:auto" onclick="toggle('brand-form')">{% include "partials/icons/plus.html" %} Ajouter une marque</button>
   </div>
 
-  <div id="brand-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
-    <form method="POST" action="{{ url_for('access.new_client') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
-        <input name="name" required placeholder="Boutique Lux" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+  <div id="brand-form" style="display:none;padding:18px 22px;border-bottom:1px solid var(--border-soft);background:var(--bg-raised)">
+    <form method="POST" action="{{ url_for('access.new_client') }}" style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Nom</label>
+        <input class="lj-input" name="name" required placeholder="Boutique Lux">
       </div>
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Type</label>
-        <select name="brand_type" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Type</label>
+        <select class="lj-select" name="brand_type">
           <option value="leadgen">Génération de leads</option>
           <option value="ecommerce">E-commerce</option>
         </select>
       </div>
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Compte Meta Ads</label>
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Compte Meta Ads</label>
         {% if meta_accounts %}
-          <select name="meta_account_id" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px;min-width:220px">
+          <select class="lj-select" name="meta_account_id" style="min-width:220px">
             <option value="">— Aucun —</option>
-            {% for a in meta_accounts %}
-              <option value="{{ a.id }}">{{ a.name }} ({{ a.id }})</option>
-            {% endfor %}
+            {% for a in meta_accounts %}<option value="{{ a.id }}">{{ a.name }} ({{ a.id }})</option>{% endfor %}
           </select>
         {% else %}
-          <input name="meta_account_id" placeholder="act_123456" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+          <input class="lj-input" name="meta_account_id" placeholder="act_123456">
         {% endif %}
       </div>
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Google Customer ID</label>
-        <input name="google_customer_id" placeholder="1234567890" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Google Customer ID</label>
+        <input class="lj-input" name="google_customer_id" placeholder="1234567890">
       </div>
-      <button type="submit" class="btn btn-primary">Ajouter</button>
+      <button type="submit" class="lj-btn lj-btn--primary">Ajouter</button>
     </form>
   </div>
 
-  <table>
+  <table class="lj-table">
     <thead><tr><th>Marque</th><th>Type</th><th>Plateformes</th><th>Actions</th></tr></thead>
     <tbody>
     {% for c in clients %}
       <tr>
-        <td style="font-weight:600">{{ c.name }}</td>
         <td>
-          {% if c.brand_type == 'ecommerce' %}
-            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e0f0e8;color:#1a5c38">E-commerce</span>
-          {% else %}
-            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e8f0ff;color:#1a3a7a">Lead gen</span>
-          {% endif %}
+          <div class="lj-table__brand">
+            <div class="lj-table__brandav lj-av--sand">{{ c.name[:2]|upper }}</div>
+            <div class="lj-table__brandname">{{ c.name }}</div>
+          </div>
+        </td>
+        <td><span class="lj-badge lj-badge--soft">{{ 'E-commerce' if c.brand_type == 'ecommerce' else 'Lead gen' }}</span></td>
+        <td>
+          <div style="display:flex;gap:5px">
+            {% if c.meta_account_id %}<span class="lj-badge lj-badge--soft">Meta</span>{% endif %}
+            {% if c.google_customer_id %}<span class="lj-badge lj-badge--soft">Google</span>{% endif %}
+          </div>
         </td>
         <td>
-          {% if c.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
-          {% if c.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
-        </td>
-        <td style="display:flex;gap:8px;align-items:center">
-          <form method="POST" action="{{ url_for('access.edit_client', client_id=c.id) }}" style="display:inline-flex;align-items:center;gap:4px">
-            <select name="brand_type" style="font-size:11px;padding:3px 6px;border:1px solid var(--bordure);border-radius:4px">
-              <option value="leadgen" {% if c.brand_type == 'leadgen' %}selected{% endif %}>Lead gen</option>
-              <option value="ecommerce" {% if c.brand_type == 'ecommerce' %}selected{% endif %}>E-commerce</option>
-            </select>
-            <button type="submit" class="btn btn-outline" style="font-size:11px;padding:2px 8px">Changer</button>
-          </form>
-          <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline"
-                onsubmit="return confirm('Désactiver la marque ' + {{ c.name | tojson }} + ' ?')">
-            <button class="btn btn-danger">Désactiver</button>
-          </form>
+          <div style="display:flex;gap:8px;align-items:center">
+            <form method="POST" action="{{ url_for('access.edit_client', client_id=c.id) }}" style="display:inline-flex;align-items:center;gap:6px">
+              <select class="lj-select" name="brand_type" style="padding:5px 28px 5px 10px;font-size:12px">
+                <option value="leadgen" {% if c.brand_type == 'leadgen' %}selected{% endif %}>Lead gen</option>
+                <option value="ecommerce" {% if c.brand_type == 'ecommerce' %}selected{% endif %}>E-commerce</option>
+              </select>
+              <button type="submit" class="lj-btn lj-btn--ghost lj-btn--sm">Changer</button>
+            </form>
+            <form method="POST" action="{{ url_for('access.deactivate_client', client_id=c.id) }}" style="display:inline"
+                  onsubmit="return confirm('Désactiver la marque ' + {{ c.name | tojson }} + ' ?')">
+              <button class="lj-btn lj-btn--sm" style="background:#b3261e;color:#fff;border-color:transparent">Désactiver</button>
+            </form>
+          </div>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="4" style="text-align:center;color:var(--gris);padding:24px">Aucune marque active.</td></tr>
+      <tr><td colspan="4" style="text-align:center;color:var(--fg-3);padding:28px">Aucune marque active.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
 
-<!-- Section Utilisateurs -->
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">Utilisateurs ({{ members|length }})</span>
-    <button onclick="document.getElementById('invite-form').style.display='block'" class="btn btn-primary">+ Inviter</button>
+<!-- ============ Section Utilisateurs ============ -->
+<div class="lj-card lj-card--flush">
+  <div style="padding:18px 22px 14px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border-soft)">
+    <h3 style="font:700 16px var(--font-display);color:var(--fg-1)">Utilisateurs</h3>
+    <span class="lj-badge lj-badge--soft">{{ members|length }}</span>
+    <button class="lj-btn lj-btn--accent lj-btn--sm" style="margin-left:auto" onclick="toggle('invite-form')">{% include "partials/icons/plus.html" %} Inviter</button>
   </div>
 
-  <div id="invite-form" style="display:none;padding:16px;border-bottom:1px solid var(--bordure);background:var(--fond)">
-    <form method="POST" action="{{ url_for('access.invite') }}" style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap">
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Nom</label>
-        <input name="name" required placeholder="Marie Leblanc" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+  <div id="invite-form" style="display:none;padding:18px 22px;border-bottom:1px solid var(--border-soft);background:var(--bg-raised)">
+    <form method="POST" action="{{ url_for('access.invite') }}" style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Nom</label>
+        <input class="lj-input" name="name" required placeholder="Marie Leblanc">
       </div>
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Email</label>
-        <input name="email" type="email" required placeholder="marie@tap.com" style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Email</label>
+        <input class="lj-input" name="email" type="email" required placeholder="marie@tap.com">
       </div>
-      <div>
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Rôle</label>
-        <select name="role" id="invite-role" onchange="toggleBrandPicker(this.value)"
-                style="padding:8px;border:1px solid var(--bordure);border-radius:6px;font-size:12px">
+      <div class="lj-field" style="margin-bottom:0">
+        <label class="lj-field__lbl">Rôle</label>
+        <select class="lj-select" name="role" id="invite-role" onchange="toggleBrandPicker(this.value)">
           <option value="admin">Admin</option>
           <option value="client">Client</option>
         </select>
       </div>
-      <div id="invite-brand-picker" style="display:none">
-        <label style="font-size:10px;color:var(--gris);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px">Marques assignées</label>
-        <div style="display:flex;flex-direction:column;gap:4px;max-height:120px;overflow-y:auto;border:1px solid var(--bordure);border-radius:6px;padding:8px;background:white">
+      <div class="lj-field" id="invite-brand-picker" style="display:none;margin-bottom:0">
+        <label class="lj-field__lbl">Marques assignées</label>
+        <div style="display:flex;flex-direction:column;gap:5px;max-height:120px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:10px;background:var(--bg-surface)">
           {% for c in clients %}
-            <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
-              <input type="checkbox" name="brand_ids" value="{{ c.id }}"> {{ c.name }}
-            </label>
+            <label style="font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="brand_ids" value="{{ c.id }}"> {{ c.name }}</label>
           {% else %}
-            <span style="font-size:12px;color:var(--gris)">Aucune marque disponible</span>
+            <span style="font-size:12px;color:var(--fg-3)">Aucune marque disponible</span>
           {% endfor %}
         </div>
       </div>
-      <div style="align-self:flex-end">
-        <button type="submit" class="btn btn-primary">Envoyer l'invitation</button>
-      </div>
+      <button type="submit" class="lj-btn lj-btn--primary" style="align-self:flex-end">Envoyer l'invitation</button>
     </form>
   </div>
 
-  <table>
-    <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Marques</th><th>Statut</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
+  <table class="lj-table">
+    <thead><tr><th>Utilisateur</th><th>Rôle</th><th>Marques</th><th>Statut</th><th>Dernière connexion</th><th></th></tr></thead>
     <tbody>
     {% for m in members %}
       <tr>
         <td>
-          <div style="font-weight:600">{{ m.name }}</div>
-          <div style="font-size:10px;color:var(--gris)">{{ m.email }}</div>
+          <div class="lj-table__brand">
+            <div class="lj-table__brandav {{ 'lj-av--burgundy' if m.role == 'admin' else 'lj-av--teal' }}">{{ m.name[:2]|upper }}</div>
+            <div>
+              <div class="lj-table__brandname">{{ m.name }}</div>
+              <div class="lj-table__brandtype">{{ m.email }}</div>
+            </div>
+          </div>
         </td>
-        <td><span class="badge badge-{{ m.role }}">{{ 'Admin' if m.role == 'admin' else 'Client' }}</span></td>
+        <td>
+          {% if m.role == 'admin' %}<span class="lj-badge" style="background:var(--luijo-burgundy);color:var(--luijo-cream)">Admin</span>
+          {% else %}<span class="lj-badge lj-badge--soft">Client</span>{% endif %}
+        </td>
         <td>
           {% if m.role == 'client' %}
-            <div style="font-size:11px;color:var(--gris);margin-bottom:4px">
-              {% set assigned = member_brands.get(m.id, []) %}
-              {% if assigned %}
-                {% for cid in assigned %}{{ client_map[cid].name if cid in client_map else '?' }}{% if not loop.last %}, {% endif %}{% endfor %}
-              {% else %}
-                <span style="color:var(--gris)">Aucune</span>
-              {% endif %}
+            {% set assigned = member_brands.get(m.id, []) %}
+            <div style="font-size:12px;color:var(--fg-2);margin-bottom:6px">
+              {% if assigned %}{% for cid in assigned %}{{ client_map[cid].name if cid in client_map else '?' }}{% if not loop.last %}, {% endif %}{% endfor %}{% else %}<span style="color:var(--fg-3)">Aucune</span>{% endif %}
             </div>
-            <button onclick="document.getElementById('brands-{{ m.id }}').style.display = document.getElementById('brands-{{ m.id }}').style.display === 'none' ? 'block' : 'none'"
-                    class="btn btn-outline" style="font-size:10px;padding:2px 8px">Modifier</button>
+            <button class="lj-btn lj-btn--ghost lj-btn--sm" onclick="toggle('brands-{{ m.id }}')">Modifier</button>
             <div id="brands-{{ m.id }}" style="display:none;margin-top:8px">
-              <form method="POST" action="{{ url_for('access.assign_brands', member_id=m.id) }}"
-                    style="display:flex;flex-direction:column;gap:4px">
-                <div style="max-height:120px;overflow-y:auto;border:1px solid var(--bordure);border-radius:6px;padding:8px;background:white">
+              <form method="POST" action="{{ url_for('access.assign_brands', member_id=m.id) }}" style="display:flex;flex-direction:column;gap:6px">
+                <div style="max-height:120px;overflow-y:auto;border:1px solid var(--border-soft);border-radius:var(--radius-sm);padding:10px;background:var(--bg-surface)">
                   {% for c in clients %}
-                    <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
-                      <input type="checkbox" name="brand_ids" value="{{ c.id }}"
-                             {% if c.id in member_brands.get(m.id, []) %}checked{% endif %}>
-                      {{ c.name }}
-                    </label>
+                    <label style="font-size:13px;display:flex;align-items:center;gap:7px;cursor:pointer"><input type="checkbox" name="brand_ids" value="{{ c.id }}" {% if c.id in member_brands.get(m.id, []) %}checked{% endif %}> {{ c.name }}</label>
                   {% endfor %}
                 </div>
-                <button type="submit" class="btn btn-primary" style="font-size:11px;padding:4px 12px;align-self:flex-start">Sauvegarder</button>
+                <button type="submit" class="lj-btn lj-btn--primary lj-btn--sm" style="align-self:flex-start">Sauvegarder</button>
               </form>
             </div>
           {% else %}
-            <span style="font-size:11px;color:var(--gris)">Accès total</span>
+            <span style="font-size:12px;color:var(--fg-3)">Accès total</span>
           {% endif %}
         </td>
         <td>
-          {% if m.password_hash %}<span class="sync-ok">● Actif</span>
-          {% elif m.invite_token %}<span style="font-size:10px;color:#f39c12">◐ Invitation envoyée</span>
-          {% else %}<span class="sync-err">Accès révoqué</span>{% endif %}
+          {% if m.password_hash %}<span class="lj-badge lj-badge--ok lj-badge--dot">Actif</span>
+          {% elif m.invite_token %}<span class="lj-badge lj-badge--dot" style="background:color-mix(in srgb,var(--luijo-orange) 16%,transparent);color:#a8480f">Invitation envoyée</span>
+          {% else %}<span class="lj-badge lj-badge--dot" style="background:color-mix(in srgb,#b3261e 12%,transparent);color:#92281b">Accès révoqué</span>{% endif %}
         </td>
-        <td style="font-size:11px;color:var(--gris)">
-          {{ m.last_login_at.strftime('%d %b à %H:%M') if m.last_login_at else '—' }}
-        </td>
+        <td style="font-size:12px;color:var(--fg-3)">{{ m.last_login_at.strftime('%d %b à %H:%M') if m.last_login_at else '—' }}</td>
         <td>
           {% if m.id != current_member.id %}
           <form method="POST" action="{{ url_for('access.revoke', member_id=m.id) }}" style="display:inline"
                 onsubmit="return confirm('Révoquer l\'accès de ' + {{ m.name | tojson }} + ' ?')">
-            <button class="btn btn-danger">Révoquer</button>
+            <button class="lj-btn lj-btn--sm" style="background:#b3261e;color:#fff;border-color:transparent">Révoquer</button>
           </form>
           {% endif %}
         </td>
@@ -192,8 +185,12 @@
 </div>
 
 <script>
+function toggle(id) {
+  const el = document.getElementById(id);
+  el.style.display = (el.style.display === 'none' || !el.style.display) ? 'block' : 'none';
+}
 function toggleBrandPicker(role) {
-  document.getElementById('invite-brand-picker').style.display = role === 'client' ? 'block' : 'none';
+  document.getElementById('invite-brand-picker').style.display = role === 'client' ? 'flex' : 'none';
 }
 </script>
 {% endblock %}

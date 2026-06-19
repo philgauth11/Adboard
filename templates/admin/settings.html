@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Paramètres{% endblock %}
+{% block crumbs %}<span>Atelier</span>{% include "partials/icons/chevron.html" %}<strong>Paramètres</strong>{% endblock %}
+
+{% block content %}
+<div class="lj-page__head">
+  <div>
+    <h1 class="lj-page__title">Paramètres</h1>
+    <p class="lj-page__sub">Configuration de l'agence {{ agency_name }} · appliquée à toutes les marques</p>
+  </div>
+</div>
+
+<div class="lj-flash" style="background:var(--bg-raised);border-color:var(--border-soft);color:var(--fg-2)">
+  Aperçu de l'écran de configuration — la sauvegarde des réglages (cadence, notifications, marque blanche) sera branchée à un modèle de paramètres dans une prochaine étape.
+</div>
+
+<div class="lj-grid" style="grid-template-columns:232px 1fr;gap:22px;align-items:start">
+  <!-- Sous-navigation -->
+  <div style="display:flex;flex-direction:column;gap:3px">
+    {% set navsections = [('profile','Profil de l\'agence','tag', true),('sync','Synchronisation','refresh', false),('brandkit','Marque blanche','sparkle', false),('notif','Notifications','bell', false),('billing','Facturation & plan','doc', false)] %}
+    {% for id, label, icon, on in navsections %}
+      <div style="display:flex;align-items:center;gap:11px;padding:10px 13px;border-radius:10px;{% if on %}background:color-mix(in srgb,var(--luijo-orange) 10%,transparent);color:#92400b;font-weight:600{% else %}color:var(--fg-2);font-weight:500{% endif %};font-size:13.5px;font-family:var(--font-display)">
+        <span style="display:flex;{% if on %}color:var(--luijo-orange){% else %}color:var(--fg-3){% endif %}">{% include "partials/icons/" + icon + ".html" %}</span>
+        <span>{{ label }}</span>
+      </div>
+    {% endfor %}
+    <div style="margin-top:14px;padding:13px 14px;border-radius:12px;background:var(--bg-raised);border:1px solid var(--border-soft)">
+      <div style="font-size:11.5px;color:var(--fg-3);line-height:1.5">Besoin d'aide pour configurer une intégration ?</div>
+      <a href="#" style="font-size:12.5px;color:var(--fg-accent);font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-top:6px">Voir la documentation →</a>
+    </div>
+  </div>
+
+  <!-- Contenu -->
+  <div style="display:flex;flex-direction:column;gap:18px">
+    <!-- Profil de l'agence -->
+    <div class="lj-card" style="padding:22px">
+      <div style="font:700 16px var(--font-display);color:var(--fg-1)">Profil de l'agence</div>
+      <div style="font-size:12.5px;color:var(--fg-3);margin-top:3px">Identité visible par votre équipe dans LUIJO.</div>
+      <div style="display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--border-soft);margin-top:6px">
+        <div style="width:60px;height:60px;border-radius:14px;background:var(--luijo-burgundy);display:grid;place-items:center;flex:0 0 auto">{% include "partials/luijo_tile.html" %}</div>
+        <div style="flex:1">
+          <div style="font:700 15px var(--font-display);color:var(--fg-1)">Logo de l'agence</div>
+          <div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">SVG ou PNG · 512×512 px recommandé</div>
+        </div>
+        <button class="lj-btn lj-btn--ghost lj-btn--sm">Remplacer</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)">
+        <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Nom de l'agence</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Affiché sous le logo dans la barre latérale.</div></div>
+        <div class="lj-input" style="width:260px;flex:0 0 auto">{{ agency_name }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)">
+        <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Fuseau horaire</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Détermine l'heure des synchronisations et rapports.</div></div>
+        <div class="lj-input" style="width:260px;flex:0 0 auto;display:flex;align-items:center">{{ timezone_label }}<span style="margin-left:auto;color:var(--fg-3)">▾</span></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0">
+        <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Devise des rapports</div></div>
+        <div class="lj-segctl"><button class="is-active">CAD&nbsp;$</button><button>USD&nbsp;$</button><button>EUR&nbsp;€</button></div>
+      </div>
+    </div>
+
+    <!-- Synchronisation + Notifications -->
+    <div class="lj-grid lj-grid--cols-2" style="gap:18px;align-items:start">
+      <div class="lj-card" style="padding:22px">
+        <div style="font:700 16px var(--font-display);color:var(--fg-1)">Synchronisation</div>
+        <div style="font-size:12.5px;color:var(--fg-3);margin-top:3px">Valeurs par défaut héritées par chaque marque.</div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft);margin-top:6px">
+          <div style="flex:1;font:600 13.5px var(--font-display);color:var(--fg-1)">Cadence automatique</div>
+          <div class="lj-segctl"><button class="is-active">1 h</button><button>4 h</button><button>12 h</button></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)">
+          <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Relance auto en cas d'échec</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">3 tentatives espacées de 10 min.</div></div>
+          <span class="lj-toggle is-on"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0">
+          <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Alerter avant expiration d'un jeton</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Préavis de 7 jours.</div></div>
+          <span class="lj-toggle is-on"></span>
+        </div>
+      </div>
+
+      <div class="lj-card" style="padding:22px">
+        <div style="font:700 16px var(--font-display);color:var(--fg-1)">Notifications</div>
+        <div style="font-size:12.5px;color:var(--fg-3);margin-top:3px">Qui reçoit quoi, et par quel canal.</div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft);margin-top:6px">
+          <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Échec de synchronisation</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Courriel immédiat aux admins.</div></div>
+          <span class="lj-toggle is-on"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft)">
+          <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Résumé hebdomadaire</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Tous les lundis à 8 h.</div></div>
+          <span class="lj-toggle is-on"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:16px 0">
+          <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Nouveau lead côté client</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Notification dans l'app.</div></div>
+          <span class="lj-toggle"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Marque blanche -->
+    <div class="lj-card" style="padding:22px">
+      <div style="font:700 16px var(--font-display);color:var(--fg-1)">Marque blanche</div>
+      <div style="font-size:12.5px;color:var(--fg-3);margin-top:3px">Personnalisation de l'espace consulté par vos clients.</div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0;border-bottom:1px solid var(--border-soft);margin-top:6px">
+        <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Couleur d'accent</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Appliquée aux boutons et graphiques côté client.</div></div>
+        <div style="display:flex;gap:8px">
+          <span style="width:26px;height:26px;border-radius:8px;background:#fe6b25;box-shadow:0 0 0 2px var(--bg-surface),0 0 0 4px #fe6b25"></span>
+          <span style="width:26px;height:26px;border-radius:8px;background:#a64470"></span>
+          <span style="width:26px;height:26px;border-radius:8px;background:#8a8a30"></span>
+          <span style="width:26px;height:26px;border-radius:8px;background:#2a5e5b"></span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px 0">
+        <div style="flex:1"><div style="font:600 13.5px var(--font-display);color:var(--fg-1)">Masquer la mention « par LUIJO »</div><div style="font-size:12.5px;color:var(--fg-3);margin-top:2px">Réservé au plan Studio.</div></div>
+        <span class="lj-toggle"></span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

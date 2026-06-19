@@ -1,142 +1,261 @@
 {% extends "base.html" %}
 {% block title %}Vue globale{% endblock %}
+
+{% block crumbs %}<span>AdBoard</span>{% include "partials/icons/chevron.html" %}<strong>Vue globale</strong>{% endblock %}
+
+{% block topbar_actions %}
+  <button class="lj-btn lj-btn--accent lj-btn--sm">{% include "partials/icons/doc.html" %} Générer un rapport</button>
+{% endblock %}
+
 {% block content %}
+{# --- valeurs dérivées pour les "highlights", calculées depuis les vraies données --- #}
+{% set avg_cpl = (global_spend / global_leads) if global_leads else 0 %}
+{% set top_result = (client_data | sort(attribute='primary_value', reverse=true) | first) if client_data else none %}
+{% set idle = (client_data | selectattr('spend', 'equalto', 0) | list | first) %}
+{% set best_cost = (client_data | selectattr('cost_per_result', 'gt', 0) | sort(attribute='cost_per_result') | first) %}
+{% set top_spend = client_data | first if client_data else none %}
 
-<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-  <h1 style="font-size:18px;font-weight:700">Vue globale</h1>
-</div>
-
-<!-- Filters -->
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <span style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Période :</span>
-  <select id="range-select" onchange="onRangeChange(this.value)"
-          style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;background:white;color:var(--brun);cursor:pointer">
-    {% for val, label in range_options %}
-      <option value="{{ val }}" {% if range==val %}selected{% endif %}>{{ label }}</option>
-    {% endfor %}
-  </select>
-  <div style="width:1px;height:20px;background:var(--beige);margin:0 8px"></div>
-  <span style="font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:1px">Plateforme :</span>
-  {% for p,l in [("all","Toutes"),("meta","Meta"),("google","Google")] %}
-    <a href="?range={{ range }}{% if range=='custom' %}&start={{ custom_start }}&end={{ custom_end }}{% endif %}&platform={{ p }}" class="pill {% if platform==p %}active{% endif %}">{{ l }}</a>
-  {% endfor %}
-</div>
-<div id="custom-dates" style="display:{% if range=='custom' %}flex{% else %}none{% endif %};align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-  <span style="font-size:11px;color:var(--gris)">Du</span>
-  <input type="date" id="start-date" value="{{ custom_start }}"
-         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
-  <span style="font-size:11px;color:var(--gris)">au</span>
-  <input type="date" id="end-date" value="{{ custom_end }}"
-         style="font-size:13px;padding:4px 8px;border:1px solid var(--beige);border-radius:6px;color:var(--brun)">
-  <button onclick="applyCustomRange()" class="btn btn-outline" style="font-size:13px;padding:4px 14px">Appliquer</button>
-</div>
-<script>
-function syncClient(id) {
-  const btn = document.getElementById('sync-' + id);
-  btn.textContent = '…';
-  btn.disabled = true;
-  fetch('/api/sync/' + id, { method: 'POST' })
-    .then(r => r.json())
-    .then(data => {
-      if (data.status === 'error') {
-        btn.textContent = '⚠ ' + data.errors[0];
-        btn.style.color = '#E95526';
-        btn.disabled = false;
-      } else {
-        btn.textContent = '✓';
-        btn.style.color = '#2d9e6b';
-      }
-    })
-    .catch(() => { btn.textContent = '! Erreur réseau'; btn.disabled = false; });
-}
-function onRangeChange(val) {
-  if (val === 'custom') {
-    document.getElementById('custom-dates').style.display = 'flex';
-  } else {
-    window.location = '?range=' + val + '&platform={{ platform }}';
-  }
-}
-function applyCustomRange() {
-  const start = document.getElementById('start-date').value;
-  const end   = document.getElementById('end-date').value;
-  if (start && end) {
-    window.location = '?range=custom&start=' + start + '&end=' + end + '&platform={{ platform }}';
-  }
-}
-</script>
-<div style="margin-bottom:20px"></div>
-
-<!-- KPIs -->
-<div class="kpi-grid">
-  <div class="kpi"><div class="kpi-label">Dépenses totales</div><div class="kpi-value">${{ "%.0f"|format(global_spend) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Leads générés</div><div class="kpi-value">{{ global_leads }}</div></div>
-  <div class="kpi"><div class="kpi-label">Revenus e-com</div><div class="kpi-value" style="color:#2d9e6b">${{ "%.0f"|format(global_revenue) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Clics totaux</div><div class="kpi-value">{{ "{:,}".format(global_clicks) }}</div></div>
-  <div class="kpi"><div class="kpi-label">Marques actives</div><div class="kpi-value">{{ active_count }}</div></div>
-</div>
-
-<!-- Clients table -->
-<div class="card">
-  <div class="card-header">
-    <span class="card-title">Toutes les marques</span>
-    <span class="card-meta">Classé par dépenses ↓</span>
+<!-- ===== Hero ===== -->
+<section class="lj-hero">
+  <div class="lj-hero__grid">
+    <div>
+      <div class="lj-hero__eyebrow">Atelier · Tête à Papineau</div>
+      <h2 class="lj-hero__title">Bonjour {{ current_user.name.split(' ')[0] }}, <em>{{ active_count }} marque{{ 's' if active_count != 1 }}</em> sous gestion.</h2>
+      <p class="lj-hero__sub">Vue d'ensemble des performances publicitaires sur la période sélectionnée — Meta Ads et Google Ads agrégés.</p>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <a class="lj-btn lj-btn--accent" href="{{ url_for('access.index') }}">{% include "partials/icons/plus.html" %} Nouvelle marque</a>
+        <button class="lj-btn lj-btn--ghost" style="color:var(--luijo-cream);border-color:rgba(253,245,238,.3)" onclick="syncAll()">{% include "partials/icons/refresh.html" %} Tout synchroniser</button>
+      </div>
+    </div>
+    <div class="lj-hero__nums">
+      <div class="lj-hero__num">
+        <div class="lj-hero__num-lbl">Dépenses</div>
+        <div class="lj-hero__num-val">${{ "%.0f"|format(global_spend) }}</div>
+      </div>
+      <div class="lj-hero__num">
+        <div class="lj-hero__num-lbl">Leads</div>
+        <div class="lj-hero__num-val">{{ global_leads }}</div>
+      </div>
+      <div class="lj-hero__num">
+        <div class="lj-hero__num-lbl">Coût / lead</div>
+        <div class="lj-hero__num-val">${{ "%.2f"|format(avg_cpl) }}</div>
+      </div>
+      <div class="lj-hero__num">
+        <div class="lj-hero__num-lbl">Marques actives</div>
+        <div class="lj-hero__num-val">{{ client_data | selectattr('spend', 'gt', 0) | list | length }}<span style="font-size:14px;color:rgba(253,245,238,.55);font-weight:500"> / {{ active_count }}</span></div>
+      </div>
+    </div>
   </div>
-  <table>
-    <thead><tr>
-      <th>Marque</th><th>Type</th>
-      <th class="right">Dépenses</th>
-      <th class="right">Résultat</th>
-      <th class="right">Coût / résultat</th>
-      <th class="right">Clics</th>
-      <th class="right">Sync</th>
-    </tr></thead>
+</section>
+
+<!-- ===== Filtres (période + plateforme) ===== -->
+<div class="lj-filters">
+  <div class="lj-filters__group">
+    <span class="lj-filters__label">Période</span>
+    <div class="lj-segctl">
+      {% for val, label in range_options if val != 'custom' %}
+        <button class="{% if range == val %}is-active{% endif %}" onclick="location='?range={{ val }}&platform={{ platform }}'">{{ label }}</button>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="lj-filters__group" style="margin-left:auto">
+    <span class="lj-filters__label">Plateforme</span>
+    <div class="lj-segctl">
+      {% for p, l in [('all','Toutes'),('meta','Meta'),('google','Google')] %}
+        <button class="{% if platform == p %}is-active{% endif %}" onclick="location='?range={{ range }}&platform={{ p }}'">{{ l }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ===== Stats ===== -->
+<div class="lj-grid lj-grid--cols-4" style="margin-bottom:22px">
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Dépenses totales</div><div class="lj-stat__val">${{ "%.0f"|format(global_spend) }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Leads générés</div><div class="lj-stat__val">{{ global_leads }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Revenus e-com</div><div class="lj-stat__val">${{ "%.0f"|format(global_revenue) }}</div></div></div>
+  <div class="lj-card" style="padding:18px"><div class="lj-stat"><div class="lj-stat__lbl">Clics totaux</div><div class="lj-stat__val">{{ "{:,}".format(global_clicks) }}</div></div></div>
+</div>
+
+<!-- ===== Highlights (calculés depuis les marques) ===== -->
+{% if client_data %}
+<div class="lj-grid lj-grid--cols-4" style="margin-bottom:22px">
+  <div class="lj-hl lj-hl--accent">
+    <div class="lj-hl__eyebrow">{% include "partials/icons/star.html" %} Top marque</div>
+    <div class="lj-hl__title">{{ top_result.client.name if top_result else '—' }}</div>
+    <div class="lj-hl__num">{{ top_result.primary_value if top_result else 0 }} {{ top_result.primary_label if top_result else '' }}</div>
+    <div class="lj-hl__foot">Dépenses : ${{ "%.0f"|format(top_result.spend) if top_result else 0 }}</div>
+  </div>
+  <div class="lj-hl">
+    <div class="lj-hl__eyebrow"><span class="pip" style="background:var(--luijo-orange)"></span> À surveiller</div>
+    <div class="lj-hl__title">{{ idle.client.name if idle else 'Aucune' }}</div>
+    <div class="lj-hl__num">{{ '0 dépense' if idle else '✓' }}</div>
+    <div class="lj-hl__foot">{{ 'Aucune diffusion sur la période' if idle else 'Toutes les marques diffusent' }}</div>
+  </div>
+  <div class="lj-hl">
+    <div class="lj-hl__eyebrow">{% include "partials/icons/trending.html" %} Meilleur coût / résultat</div>
+    <div class="lj-hl__title">{{ best_cost.client.name if best_cost else '—' }}</div>
+    <div class="lj-hl__num">{{ ('$%.2f'|format(best_cost.cost_per_result)) if best_cost else '—' }}</div>
+    <div class="lj-hl__foot">{{ best_cost.cost_label if best_cost else '' }} · {{ best_cost.primary_value if best_cost else 0 }} {{ best_cost.primary_label if best_cost else '' }}</div>
+  </div>
+  <div class="lj-hl">
+    <div class="lj-hl__eyebrow">{% include "partials/icons/trending.html" %} Plus de dépenses</div>
+    <div class="lj-hl__title">{{ top_spend.client.name if top_spend else '—' }}</div>
+    <div class="lj-hl__num">${{ "%.0f"|format(top_spend.spend) if top_spend else 0 }}</div>
+    <div class="lj-hl__foot">{{ top_spend.primary_value if top_spend else 0 }} {{ top_spend.primary_label if top_spend else '' }}</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== Graphiques ===== -->
+{% if chart_labels %}
+<div class="lj-grid" style="grid-template-columns:2fr 1fr;margin-bottom:22px">
+  <div class="lj-card">
+    <div class="lj-chart__head">
+      <div>
+        <div class="lj-chart__title">Évolution — dépenses &amp; leads</div>
+        <div class="lj-chart__sub">Sur la période · {{ 'toutes plateformes' if platform == 'all' else platform|capitalize }}</div>
+      </div>
+    </div>
+    <div class="lj-chart lj-chart--lg"><canvas id="evoChart"></canvas></div>
+  </div>
+  <div class="lj-card">
+    <div class="lj-chart__head">
+      <div>
+        <div class="lj-chart__title">Répartition du budget</div>
+        <div class="lj-chart__sub">Par plateforme</div>
+      </div>
+    </div>
+    <div class="lj-chart lj-chart--lg"><canvas id="splitChart"></canvas></div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== Tableau des marques ===== -->
+<div class="lj-card lj-card--flush">
+  <div style="padding:18px 22px 14px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border-soft)">
+    <h3 style="font:700 16px var(--font-display);color:var(--fg-1)">Toutes les marques</h3>
+    <span class="lj-badge lj-badge--soft">{{ client_data | length }} active{{ 's' if (client_data | length) != 1 }}</span>
+    <span style="margin-left:auto;font-size:12px;color:var(--fg-3)">Classé par dépenses ↓</span>
+  </div>
+  <table class="lj-table">
+    <thead>
+      <tr>
+        <th>Marque</th>
+        <th>Plateformes</th>
+        <th>Type</th>
+        <th class="num">Dépenses</th>
+        <th class="num">Résultat</th>
+        <th class="num">Coût / résultat</th>
+        <th class="num">Clics</th>
+        <th>Sync</th>
+        <th></th>
+      </tr>
+    </thead>
     <tbody>
     {% for row in client_data %}
-      <tr onclick="window.location='/admin/marque/{{ row.client.id }}?range={{ range }}'">
+      <tr style="cursor:pointer" onclick="location='/admin/marque/{{ row.client.id }}?range={{ range }}'">
         <td>
-          <div style="font-weight:600">{{ row.client.name }}</div>
-          <div style="display:flex;gap:4px;margin-top:3px">
-            {% if row.client.meta_account_id %}<span class="tag-meta">Meta</span>{% endif %}
-            {% if row.client.google_customer_id %}<span class="tag-google">Google</span>{% endif %}
+          <div class="lj-table__brand">
+            <div class="lj-table__brandav">{{ row.client.name[:2]|upper }}</div>
+            <div>
+              <div class="lj-table__brandname">{{ row.client.name }}</div>
+              <div class="lj-table__brandtype">{% if row.last_sync %}Synchro · {{ row.last_sync | localtime }}{% else %}Jamais synchronisée{% endif %}</div>
+            </div>
           </div>
         </td>
         <td>
-          {% if row.client.brand_type == 'ecommerce' %}
-            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e0f0e8;color:#1a5c38">E-com</span>
-          {% else %}
-            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#e8f0ff;color:#1a3a7a">Lead gen</span>
-          {% endif %}
+          <div class="lj-platforms" style="display:flex;gap:5px">
+            {% if row.client.meta_account_id %}<span class="lj-badge lj-badge--soft">Meta</span>{% endif %}
+            {% if row.client.google_customer_id %}<span class="lj-badge lj-badge--soft">Google</span>{% endif %}
+          </div>
         </td>
-        <td class="right"><strong>${{ "%.0f"|format(row.spend) }}</strong></td>
-        <td class="right">
-          {% if row.primary_value > 0 %}
-            <strong>{{ row.primary_value }}</strong>
-            <span style="font-size:11px;color:var(--gris);margin-left:4px">{{ row.primary_label }}</span>
-          {% else %}
-            <span style="color:var(--gris)">—</span>
-          {% endif %}
+        <td><span class="lj-badge lj-badge--soft">{{ 'E-com' if row.client.brand_type == 'ecommerce' else 'Lead gen' }}</span></td>
+        <td class="num"><strong>{{ ('$%.0f'|format(row.spend)) if row.spend > 0 else '—' }}</strong></td>
+        <td class="num">{% if row.primary_value > 0 %}{{ row.primary_value }} <span style="font-size:11px;color:var(--fg-3)">{{ row.primary_label }}</span>{% else %}<span style="color:var(--fg-3)">—</span>{% endif %}</td>
+        <td class="num">{% if row.cost_per_result > 0 %}<span style="font-size:11px;color:var(--fg-3)">{{ row.cost_label }}</span> ${{ "%.2f"|format(row.cost_per_result) }}{% else %}<span style="color:var(--fg-3)">—</span>{% endif %}</td>
+        <td class="num">{{ "{:,}".format(row.clicks) }}</td>
+        <td onclick="event.stopPropagation()">
+          <button id="sync-{{ row.client.id }}" onclick="syncClient({{ row.client.id }})" class="lj-btn lj-btn--ghost lj-btn--sm">{% include "partials/icons/refresh.html" %} Sync</button>
         </td>
-        <td class="right">
-          {% if row.cost_per_result > 0 %}
-            <span style="font-size:11px;color:var(--gris)">{{ row.cost_label }}</span> ${{ "%.2f"|format(row.cost_per_result) }}
-          {% else %}
-            <span style="color:var(--gris)">—</span>
-          {% endif %}
-        </td>
-        <td class="right">{{ "{:,}".format(row.clicks) }}</td>
-        <td class="right" onclick="event.stopPropagation()">
-          <button id="sync-{{ row.client.id }}" onclick="syncClient({{ row.client.id }})" class="btn btn-outline" style="font-size:11px;padding:2px 8px">↻ Sync</button>
-          {% if row.last_sync %}
-            <span class="sync-ok" style="font-size:11px;display:block">✓ {{ row.last_sync | localtime }}</span>
-          {% else %}
-            <span class="sync-err" style="font-size:11px;display:block">Jamais</span>
-          {% endif %}
+        <td style="width:1px">
+          <button class="lj-btn lj-btn--ghost lj-btn--sm">Détails{% include "partials/icons/chevron.html" %}</button>
         </td>
       </tr>
     {% else %}
-      <tr><td colspan="7" style="text-align:center;color:var(--gris);padding:24px">Aucune marque — ajoutes-en une dans Accès.</td></tr>
+      <tr><td colspan="9" style="text-align:center;color:var(--fg-3);padding:28px">Aucune marque — ajoutez-en une dans <a href="{{ url_for('access.index') }}">Marques</a>.</td></tr>
     {% endfor %}
     </tbody>
   </table>
 </div>
+
+<script>
+function syncClient(id) {
+  const btn = document.getElementById('sync-' + id);
+  const orig = btn.innerHTML;
+  btn.textContent = '…'; btn.disabled = true;
+  fetch('/api/sync/' + id, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'error') { btn.textContent = '⚠ ' + data.errors[0]; btn.disabled = false; }
+      else { btn.textContent = '✓ Synchronisé'; setTimeout(() => location.reload(), 800); }
+    })
+    .catch(() => { btn.textContent = '! Erreur réseau'; btn.disabled = false; });
+}
+function syncAll() {
+  document.querySelectorAll('[id^="sync-"]').forEach(b => b.click());
+}
+</script>
+
+{% if chart_labels %}
+<script>
+(function () {
+  const labels = {{ chart_labels | tojson }};
+  const spend  = {{ chart_spend | tojson }};
+  const leads  = {{ chart_leads | tojson }};
+  const split  = {{ platform_split | tojson }};
+
+  // --- Évolution dépenses & leads (double axe) ---
+  const evo = document.getElementById('evoChart');
+  if (evo) {
+    const ctx = evo.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 0, 280);
+    g.addColorStop(0, 'rgba(254,107,37,0.28)'); g.addColorStop(1, 'rgba(254,107,37,0)');
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [
+        { label: 'Dépenses', data: spend, borderColor: '#fe6b25', backgroundColor: g, fill: true, tension: .35, borderWidth: 2.2, pointRadius: 0, yAxisID: 'y' },
+        { label: 'Leads', data: leads, borderColor: '#600e18', backgroundColor: 'transparent', fill: false, tension: .35, borderWidth: 2.2, pointRadius: 0, yAxisID: 'y1' },
+      ]},
+      options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { position: 'top', align: 'end', labels: { boxWidth: 8, boxHeight: 8, font: { family: 'Inter', size: 11 } } },
+          tooltip: { backgroundColor: '#600e18', padding: 10, cornerRadius: 8 } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#7a6c58', font: { size: 10.5 }, maxTicksLimit: 8 } },
+          y:  { position: 'left',  grid: { color: 'rgba(96,14,24,0.07)' }, ticks: { color: '#7a6c58', font: { size: 10.5 }, callback: v => '$' + v } },
+          y1: { position: 'right', grid: { display: false }, ticks: { color: '#7a6c58', font: { size: 10.5 } } },
+        }
+      }
+    });
+  }
+
+  // --- Répartition du budget par plateforme (donut) ---
+  const sp = document.getElementById('splitChart');
+  if (sp) {
+    const names = { meta: 'Meta Ads', google: 'Google Ads', organic: 'Organique' };
+    const keys = Object.keys(split);
+    new Chart(sp.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: keys.map(k => names[k] || k),
+        datasets: [{ data: keys.map(k => split[k]), backgroundColor: ['#600e18', '#fe6b25', '#d9c2a3', '#544838'], borderColor: '#fdf5ee', borderWidth: 3 }],
+      },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, font: { family: 'Inter', size: 11.5 }, color: '#544838' } },
+          tooltip: { backgroundColor: '#600e18', padding: 10, cornerRadius: 8, callbacks: { label: c => ' ' + c.label + ' : $' + c.parsed.toLocaleString('fr-CA') } } } }
+    });
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}
